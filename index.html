@@ -43,11 +43,28 @@
         }
 
         /* ─── BG DECOR ────────────────────────────── */
+        .bg-glow-wrap {
+            position: fixed; inset: 0; z-index: -1; overflow: hidden;
+            pointer-events: none; background: var(--bg);
+        }
+        .glow-blob {
+            position: absolute; width: 60vw; height: 60vw;
+            border-radius: 50%; filter: blur(100px); opacity: 0.1;
+            animation: move-glow 25s infinite alternate ease-in-out;
+        }
+        .glow-1 { background: var(--red); top: -10%; left: -10%; }
+        .glow-2 { background: #1e3a8a; bottom: -10%; right: -10%; animation-delay: -12.5s; }
+        
+        @keyframes move-glow {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            100% { transform: translate(15%, 15%) scale(1.1) rotate(20deg); }
+        }
+
         body::before {
             content: ''; position: fixed; inset: 0;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 48px 48px; z-index: 0; pointer-events: none;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+            background-size: 64px 64px; z-index: 0; pointer-events: none;
         }
 
         /* ─── LAYOUT ─────────────────────────────── */
@@ -83,6 +100,18 @@
             display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
         }
         .cal-btn:hover, .yt-btn:hover { background: var(--muted2); }
+
+        /* ─── MUSIC BEAT GLOW ────────────────────── */
+        @keyframes beatPulse {
+            0% { box-shadow: 0 0 0 0 var(--red-glow); transform: scale(1); }
+            50% { box-shadow: 0 0 20px 10px rgba(220, 38, 38, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); transform: scale(1); }
+        }
+        .yt-btn.is-playing {
+            animation: beatPulse 0.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--red);
+            border-color: var(--red-soft);
+        }
 
         /* ─── SLIDER ─────────────────────────────── */
         .slider-viewport {
@@ -287,18 +316,55 @@
             background-size: 400% 400%;
             animation: subtle-bg 3s ease infinite;
         }
+
+        /* ─── HEARTBEAT GLOW ───────────────────────── */
+        @keyframes heartbeatBg {
+            0% { transform: scale(1); filter: blur(100px) brightness(1); }
+            15% { transform: scale(1.15); filter: blur(120px) brightness(1.6); }
+            30% { transform: scale(1); filter: blur(100px) brightness(1); }
+            45% { transform: scale(1.15); filter: blur(120px) brightness(1.6); }
+            100% { transform: scale(1); filter: blur(100px) brightness(1); }
+        }
+
+        body.heartbeat-mode .bg-glow-wrap {
+            background: rgba(40, 0, 0, 0.4);
+        }
+        body.heartbeat-mode .glow-1, body.heartbeat-mode .glow-2 {
+            background: #ff0000 !important;
+            animation: heartbeatBg 1.5s infinite !important;
+            opacity: 0.25;
+        }
+
+        /* ─── QUOTE GLOW ──────────────────────────── */
+        .quote-bar {
+            transition: all 0.5s ease;
+        }
+        .quote-glow-active {
+            text-shadow: 0 0 10px var(--red-glow), 0 0 20px var(--red);
+            color: #fff;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 
 <body class="is-locked">
 
+    <div class="bg-glow-wrap">
+        <div class="glow-blob glow-1"></div>
+        <div class="glow-blob glow-2"></div>
+    </div>
+
     <div id="adminLock">
         <div class="lock-card">
-            <h2 style="letter-spacing:-0.03em">🔐 Secure Access</h2>
-            <p style="color:var(--muted); font-size:0.85rem; margin-top:0.4rem">Enter administrator passphrase</p>
-            <input class="lock-input" id="adminPassInput" type="password" placeholder="Passphrase..." onkeydown="if(event.key==='Enter')checkAdminPass()" />
-            <button class="lock-btn" onclick="checkAdminPass()">Unlock Dashboard →</button>
-            <div id="lockError" style="color:var(--red-soft); margin-top:1rem; font-size:0.85rem; display:none">Access Denied: Invalid Passphrase</div>
+            <h2 style="font-size:1.8rem; font-weight:900; margin-bottom:0.4rem">🔐 Secure Access</h2>
+            <p style="color:var(--muted); font-size:0.9rem; margin-bottom:1.5rem">Enter administrator password</p>
+            
+            <div style="margin-bottom:1.2rem; text-align:left">
+              <input type="password" id="adminPassInput" class="lock-input" placeholder="Password..." />
+            </div>
+            
+            <button class="lock-btn" id="unlockBtn">Unlock Dashboard →</button>
+            <div id="lockError" style="color:var(--red-soft); margin-top:1rem; font-size:0.85rem; display:none">Access Denied</div>
         </div>
     </div>
 
@@ -312,7 +378,7 @@
                 <div class="slide-counter"><span id="currSlide">1</span>/<span id="totalSlide">7</span></div>
                 <button class="sync-btn" onclick="exportAndSync()">🔄 Update</button>
                 <button class="cal-btn" onclick="openHistory()" title="History">📅</button>
-                <button class="yt-btn" onclick="window.open('https://music.youtube.com','_blank')" title="YouTube Music">▶</button>
+                <button class="yt-btn" id="ytMusicBtn" onclick="playRandomMusic()" title="YouTube Music">▶</button>
             </div>
         </header>
 
@@ -357,89 +423,93 @@
 
     <div class="toast" id="toast"></div>
 
-    <script>
-        /* ─── DATA ─────────────────────────────────── */
-        const STORE_KEY = 'shashi_v4_clean';
-        const HIST_KEY = 'shashi_hist_v4';
-        const TIMER_MAX = 40 * 60 * 100;
-        
-        const QUOTES = [
-            "Action is the foundational key to all success.",
-            "Focus on being productive instead of busy.",
-            "Quality is not an act, it is a habit.",
-            "The secret of getting ahead is getting started.",
-            "Do what you can, with what you have, where you are."
-        ];
+    <!-- SUPABASE LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        const DEFAULT_CLIENTS = [
-            { id: "digital_juggler", name: "DIGITAL JUGGLER", tasks: ["Reel 1", "Reel 2", "Reel 3", "Reel 4", "Reel 5"] },
-            { id: "kalraj_thakur", name: "KALRAJ THAKUR", tasks: ["Video 1", "Video 2", "Video 3", "Video 4"] },
-            { id: "shikhar", name: "SHIKHAR", tasks: ["Daily Post"] },
-            { id: "flowgreen", name: "FLOWGREEN", tasks: ["Content Task"] },
-            { id: "growgreen", name: "GROWGREEN", tasks: ["Daily Post"] },
-            { id: "sam_renissa", name: "SAM RENISSA", tasks: ["YouTube Upload"] },
-            { id: "varchas", name: "VARCHAS", tasks: ["Post (Alternate Day)"] }
-        ];
+    <!-- MODULAR SAAS LOGIC -->
+    <script type="module">
+        import supabase from './js/supabaseClient.js';
+        import { checkSession, login, logout } from './js/auth.js';
+        import { startWork, stopWork, getActiveSession } from './js/timer.js';
+        import { subscribeToAllData } from './js/realtime.js';
+        import { renderReactions } from './js/ui-addons.js';
 
-        const ROUTINE = [
-            { s: "09:00", e: "09:30", l: "Plan Mode" },
-            { s: "09:30", e: "11:30", l: "Deep Work" },
-            { s: "11:30", e: "12:00", l: "Reset Break" },
-            { s: "12:00", e: "14:00", l: "Execution" },
-            { s: "14:00", e: "15:00", l: "Lunch Off" },
-            { s: "15:00", e: "17:00", l: "Batch Mode" },
-            { s: "17:00", e: "17:30", l: "Quick Break" },
-            { s: "17:30", e: "18:30", l: "Client Sync" },
-            { s: "18:30", e: "20:00", l: "Buffer Build" },
-            { s: "20:00", e: "22:00", l: "Chill Time" },
-            { s: "22:00", e: "23:00", l: "GF Time" },
-            { s: "23:00", e: "01:00", l: "Night Grind" }
-        ];
-
-        /* ─── STATE ────────────────────────────────── */
-        let state = { clients: [], checked: {}, timerResults: {} };
+        // Global state
+        let state = { clients: [], checked: {}, sessions: {}, feedback: [] };
         let currentSlide = 0;
-        let intervals = {};
-        let timerCs = {};
-        let activeRoutineIdx = -1;
+        
+        async function init() {
+            const authData = await checkSession('admin');
+            if (!authData) {
+                document.body.classList.add('is-locked');
+                document.getElementById('adminLock').style.display = 'flex';
+                return;
+            }
 
-        /* ─── CORE ─────────────────────────────────── */
-        function init() {
-            const saved = localStorage.getItem(STORE_KEY);
-            if (saved) state = JSON.parse(saved);
-            if (!state.clients || !state.clients.length) state.clients = JSON.parse(JSON.stringify(DEFAULT_CLIENTS));
+            document.body.classList.remove('is-locked');
+            document.getElementById('adminLock').style.display = 'none';
+
+            // Initial Fetch
+            await refreshData();
             
-            state.clients.forEach(c => {
-                if (!state.checked[c.id]) state.checked[c.id] = new Array(c.tasks.length).fill(false);
-                // Ensure checked array length matches task length
-                if (state.checked[c.id].length !== c.tasks.length) {
-                    const newArr = new Array(c.tasks.length).fill(false);
-                    state.checked[c.id].forEach((v, i) => { if(i < newArr.length) newArr[i] = v; });
-                    state.checked[c.id] = newArr;
-                }
-            });
+            // Subscriptions
+            subscribeToAllData(() => refreshData());
 
-            document.getElementById('quoteBar').textContent = QUOTES[Math.floor(Math.random()*QUOTES.length)];
-            renderSlides();
-            renderDots();
             renderRoutine();
             updateRoutine();
-            setInterval(updateRoutine, 10000); // Check every 10s
-            
-            // Re-render slider properly on resize
+            setInterval(updateRoutine, 10000);
             window.addEventListener('resize', () => goToSlide(currentSlide, false));
+            
+            // Start Quote Rotation
+            rotateAdminQuotes();
+            setInterval(rotateAdminQuotes, 10000);
         }
 
-        function save() {
-            localStorage.setItem(STORE_KEY, JSON.stringify(state));
-            const syncBtn = document.querySelector('.sync-btn');
-            if (syncBtn) syncBtn.classList.add('has-changes');
-            saveHistory();
+        const ADMIN_QUOTES = [
+            "Focus is a muscle. Train it.",
+            "Small steps every day.",
+            "Consistency beats intensity.",
+            "One task at a time.",
+            "Turn off distractions. Turn on execution."
+        ];
+        let adminQuoteIdx = 0;
+        function rotateAdminQuotes() {
+            const qBar = document.getElementById('quoteBar');
+            if (!qBar) return;
+            qBar.classList.remove('quote-glow-active');
+            setTimeout(() => {
+                qBar.textContent = ADMIN_QUOTES[adminQuoteIdx];
+                qBar.classList.add('quote-glow-active');
+                adminQuoteIdx = (adminQuoteIdx + 1) % ADMIN_QUOTES.length;
+            }, 500);
         }
 
-        /* ─── UI RENDERING ─────────────────────────── */
+        async function refreshData() {
+            const [c, s, f] = await Promise.all([
+                supabase.from('clients').select('*, tasks(*)'),
+                supabase.from('work_sessions').select('*').eq('is_active', true),
+                supabase.from('emoji_feedback').select('*')
+            ]);
+            
+            state.clients = c.data || [];
+            state.sessions = (s.data || []).reduce((acc, sess) => ({ ...acc, [sess.client_id]: sess }), {});
+            state.feedback = f.data || [];
+            
+            // Heartbeat Logic
+            if (Object.keys(state.sessions).length > 0) {
+                document.body.classList.add('heartbeat-mode');
+            } else {
+                document.body.classList.remove('heartbeat-mode');
+            }
+            
+            renderSlides();
+            renderDots();
+        }
+
+        // --- UI RENDERING (Matching Original Theme) ---
         function renderSlides() {
             const track = document.getElementById('slidesTrack');
+            if (!track) return;
             track.innerHTML = '';
             document.getElementById('totalSlide').textContent = state.clients.length;
             
@@ -453,142 +523,184 @@
         }
 
         function buildColumn(c) {
-            const done = state.checked[c.id].filter(Boolean).length;
-            const total = c.tasks.length;
+            const tasks = c.tasks || [];
+            const done = tasks.filter(t => t.status === 'completed').length;
+            const total = tasks.length;
             const pct = total > 0 ? Math.round((done/total)*100) : 0;
             const isAll = done === total && total > 0;
-            const isRunning = !!intervals[c.id];
-            const cs = timerCs[c.id] ?? TIMER_MAX;
-            const res = state.timerResults[c.id];
+            const activeSession = state.sessions[c.id];
 
-            const tasks = c.tasks.map((t, i) => `
-                <div class="task-card ${state.checked[c.id][i]?'done':''}" onclick="toggleTask('${c.id}',${i})">
-                    <div class="task-check">${state.checked[c.id][i]?'✓':''}</div>
-                    <span class="task-name">${t}</span>
-                </div>
-            `).join('');
+            const taskHtml = tasks.map((t) => {
+                const taskFeedback = state.feedback.filter(f => f.task_id === t.id);
+                return `
+                    <div class="task-card ${t.status === 'completed'?'done':''}" onclick="updateTaskStatus('${t.id}', '${t.status === 'completed' ? 'pending' : 'completed'}')">
+                        <div class="task-check">${t.status === 'completed'?'✓':''}</div>
+                        <div style="flex:1; display:flex; justify-content:space-between; align-items:center">
+                            <span class="task-name">${t.title}</span>
+                            <div class="reactions-box">${renderReactions(taskFeedback)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             return `
                 <div class="client-column">
                     <div class="client-header-card ${isAll?'done-card':''}">
                         <div style="display:flex; justify-content:space-between; align-items:center">
-                            <span class="client-name-editable">${c.name}</span>
+                            <span class="client-name-editable">${c.business_name}</span>
                             <span class="progress-pill ${isAll?'done':''}">${done}/${total}</span>
                         </div>
                         <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${pct}%"></div></div>
                     </div>
-                    <div class="tasks-floating">${tasks}</div>
+                    <div class="tasks-floating">${taskHtml}</div>
                     <div class="timer-card">
-                        ${res ? `<div style="font-weight:700; color:var(--green-soft); font-size:1.1rem">Spent: ${res}</div>` : 
-                               `<div class="timer-digits">${formatTime(cs)}</div>`}
-                        <div class="timer-btns">
-                            ${!res ? `
-                                <button class="btn btn-start" onclick="event.stopPropagation(); startTimer('${c.id}')" ${isRunning?'disabled':''}>Start</button>
-                                <button class="btn btn-stop" onclick="event.stopPropagation(); stopTimer('${c.id}')" ${!isRunning?'disabled':''}>Stop</button>
-                            ` : ``}
-                            <button class="btn-reset" onclick="event.stopPropagation(); resetTimer('${c.id}')">↺ Reset</button>
-                        </div>
+                        ${activeSession ? `
+                            <div style="font-weight:700; color:var(--red-soft); font-size:1.1rem">🔥 WORKING NOW...</div>
+                            <button class="btn btn-stop" onclick="handleStopWork('${c.id}', '${activeSession.id}')">Stop Work</button>
+                        ` : `
+                            <button class="btn btn-start" onclick="handleStartWork('${c.id}')">Start Work Session</button>
+                        `}
                     </div>
                 </div>
             `;
         }
 
-        function toggleTask(cid, idx) {
-            state.checked[cid][idx] = !state.checked[cid][idx];
-            save();
-            renderSlides();
-            renderDots();
-            if (state.checked[cid].every(Boolean)) {
-                showToast(`✅ ${cid} Completed!`);
-            }
-        }
+        // --- EXPOSED FUNCTIONS ---
+        window.updateTaskStatus = async (taskId, newStatus) => {
+            await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+        };
 
-        /* ─── SLIDER ───────────────────────────────── */
-        function goSlide(dir) { goToSlide(currentSlide + dir); }
+        window.handleStartWork = async (clientId) => {
+            await startWork(clientId);
+            refreshData();
+        };
+
+        window.handleStopWork = async (clientId, sessionId) => {
+            const mins = await stopWork(sessionId);
+            alert(`Session ended: ${Math.round(mins)} minutes logged.`);
+            refreshData();
+        };
+
+        window.checkAdminPass = async () => {
+            console.log("Admin login attempt...");
+            const email = 'singhshashikant301@gmail.com'; 
+            const pass = document.getElementById('adminPassInput').value;
+            if (!pass) return;
+            
+            try {
+                await login(email, pass);
+                console.log("Login success.");
+            } catch (e) {
+                console.error("Login failed:", e);
+                const err = document.getElementById('lockError');
+                err.textContent = "Login Failed: " + (e.message || "Check credentials.");
+                err.style.display = 'block';
+            }
+        };
+
+        // Attach Listeners
+        document.getElementById('unlockBtn').onclick = () => window.checkAdminPass();
+        document.getElementById('adminPassInput').onkeydown = (e) => {
+            if (e.key === 'Enter') window.checkAdminPass();
+        };
+
+        window.doLogout = () => logout();
+        window.goSlide = (dir) => goToSlide(currentSlide + dir);
+        window.toggleSidebar = () => document.getElementById('routineSidebar').classList.toggle('open');
+
+        window.playRandomMusic = () => {
+            const playlists = [
+                'https://music.youtube.com/watch?v=jfKfPfyJRdk', // Lofi Girl
+                'https://music.youtube.com/watch?v=5qap5aO4i9A', // Synthwave
+                'https://music.youtube.com/watch?v=DWcJFNfaw9c', // Deep Focus
+                'https://music.youtube.com/watch?v=7NOSDKb0HlU', // Coffee Shop
+                'https://music.youtube.com/watch?v=BeO_m0uA-0E'  // Dark Ambient
+            ];
+            const random = playlists[Math.floor(Math.random() * playlists.length)];
+            window.open(random, '_blank');
+            
+            const btn = document.getElementById('ytMusicBtn');
+            if (btn) btn.classList.add('is-playing');
+        };
+
+        // Original UI Helpers
         function goToSlide(idx, anim = true) {
             if (idx < 0 || idx >= state.clients.length) return;
             currentSlide = idx;
             const track = document.getElementById('slidesTrack');
-            track.style.transition = anim ? 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)' : 'none';
-            track.style.transform = `translateX(${-currentSlide * 100}%)`;
-            document.getElementById('currSlide').textContent = currentSlide + 1;
-            document.getElementById('prevBtn').disabled = currentSlide === 0;
-            document.getElementById('nextBtn').disabled = currentSlide === state.clients.length - 1;
+            if (track) {
+                track.style.transition = anim ? 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)' : 'none';
+                track.style.transform = `translateX(${-currentSlide * 100}%)`;
+            }
+            const currEl = document.getElementById('currSlide');
+            if (currEl) currEl.textContent = currentSlide + 1;
+            const pBtn = document.getElementById('prevBtn');
+            const nBtn = document.getElementById('nextBtn');
+            if (pBtn) pBtn.disabled = currentSlide === 0;
+            if (nBtn) nBtn.disabled = currentSlide === state.clients.length - 1;
             renderDots();
         }
 
         function renderDots() {
             const wrap = document.getElementById('dotIndicators');
+            if (!wrap) return;
             wrap.innerHTML = '';
             state.clients.forEach((c, i) => {
-                const isDone = state.checked[c.id].every(Boolean);
                 const d = document.createElement('div');
-                d.className = `dot ${i===currentSlide?'active':''} ${isDone?'completed-dot':''}`;
-                d.onclick = () => goToSlide(i);
+                d.className = `dot ${i===currentSlide?'active':''}`;
+                d.onclick = () => window.goSlide(i - currentSlide);
                 wrap.appendChild(d);
             });
         }
 
-        /* ─── TIMER ────────────────────────────────── */
-        function startTimer(cid) {
-            if (intervals[cid]) return;
-            if (timerCs[cid] === undefined) timerCs[cid] = TIMER_MAX;
-            intervals[cid] = setInterval(() => {
-                if (timerCs[cid] > 0) {
-                    timerCs[cid] -= 10;
-                    const el = document.querySelector(`#slidesTrack .slide:nth-child(${state.clients.findIndex(c=>c.id===cid)+1}) .timer-digits`);
-                    if(el) el.innerHTML = formatTime(timerCs[cid]);
-                } else {
-                    stopTimer(cid);
-                }
-            }, 100);
-            renderSlides();
-        }
-        function stopTimer(cid) {
-            clearInterval(intervals[cid]);
-            delete intervals[cid];
-            const spent = TIMER_MAX - timerCs[cid];
-            const m = Math.floor(spent/6000);
-            const s = Math.floor((spent%6000)/100);
-            state.timerResults[cid] = `${m}m ${s}s`;
-            save();
-            renderSlides();
-        }
-        function resetTimer(cid) {
-            clearInterval(intervals[cid]);
-            delete intervals[cid];
-            timerCs[cid] = TIMER_MAX;
-            delete state.timerResults[cid];
-            save();
-            renderSlides();
-        }
-        function formatTime(cs) {
-            const m = Math.floor(cs/6000);
-            const s = Math.floor((cs%6000)/100);
-            const ms = Math.floor((cs%100)/10);
-            return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}<span class="timer-ms">.${ms}</span>`;
+        function renderRoutine() {
+            const ROUTINE = [
+                { s: "09:00", e: "09:30", l: "Plan Mode" },
+                { s: "09:30", e: "11:30", l: "Deep Work" },
+                { s: "11:30", e: "12:00", l: "Reset Break" },
+                { s: "12:00", e: "14:00", l: "Execution" },
+                { s: "14:00", e: "15:00", l: "Lunch Off" },
+                { s: "15:00", e: "17:00", l: "Batch Mode" },
+                { s: "17:00", e: "17:30", l: "Quick Break" },
+                { s: "17:30", e: "18:30", l: "Client Sync" },
+                { s: "18:30", e: "20:00", l: "Buffer Build" },
+                { s: "20:00", e: "22:00", l: "Chill Time" },
+                { s: "22:00", e: "23:00", l: "GF Time" },
+                { s: "23:00", e: "01:00", l: "Night Grind" }
+            ];
+            const list = document.getElementById('routineList');
+            if (list) {
+                list.innerHTML = ROUTINE.map((r, i) => `
+                    <div class="routine-item" id="ri-${i}">
+                        <div class="ri-time">${r.s} - ${r.e}</div>
+                        <div class="ri-label">${r.l}</div>
+                    </div>
+                `).join('');
+            }
         }
 
-        /* ─── ROUTINE ──────────────────────────────── */
-        function toggleSidebar() { document.getElementById('routineSidebar').classList.toggle('open'); }
-        
+        let activeRoutineIdx = -1;
         function getIST() { 
             const d = new Date();
             const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-            return new Date(utc + (3600000 * 5.5)); // +5:30
-        }
-
-        function renderRoutine() {
-            const list = document.getElementById('routineList');
-            list.innerHTML = ROUTINE.map((r, i) => `
-                <div class="routine-item" id="ri-${i}">
-                    <div class="ri-time">${r.s} - ${r.e}</div>
-                    <div class="ri-label">${r.l}</div>
-                </div>
-            `).join('');
+            return new Date(utc + (3600000 * 5.5)); 
         }
 
         function updateRoutine() {
+            const ROUTINE = [
+                { s: "09:00", e: "09:30", l: "Plan Mode" },
+                { s: "09:30", e: "11:30", l: "Deep Work" },
+                { s: "11:30", e: "12:00", l: "Reset Break" },
+                { s: "12:00", e: "14:00", l: "Execution" },
+                { s: "14:00", e: "15:00", l: "Lunch Off" },
+                { s: "15:00", e: "17:00", l: "Batch Mode" },
+                { s: "17:00", e: "17:30", l: "Quick Break" },
+                { s: "17:30", e: "18:30", l: "Client Sync" },
+                { s: "18:30", e: "20:00", l: "Buffer Build" },
+                { s: "20:00", e: "22:00", l: "Chill Time" },
+                { s: "22:00", e: "23:00", l: "GF Time" },
+                { s: "23:00", e: "01:00", l: "Night Grind" }
+            ];
             const ist = getIST();
             const nowMin = ist.getHours() * 60 + ist.getMinutes();
             
@@ -598,136 +710,33 @@
                 const [eh, em] = r.e.split(':').map(Number);
                 let start = sh * 60 + sm;
                 let end = eh * 60 + em;
-                if (end < start) end += 1440; // Over midnight
-                
+                if (end < start) end += 1440;
                 const cur = (nowMin < start && end > 1440) ? nowMin + 1440 : nowMin;
                 
                 const item = document.getElementById(`ri-${i}`);
-                if (cur >= start && cur < end) {
-                    item.classList.add('active');
-                    if (foundIdx === -1) {
-                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (item) {
+                    if (cur >= start && cur < end) {
+                        item.classList.add('active');
+                        if (foundIdx === -1) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        foundIdx = i;
+                    } else {
+                        item.classList.remove('active');
                     }
-                    foundIdx = i;
-                } else {
-                    item.classList.remove('active');
                 }
             });
 
-            if (foundIdx !== -1 && foundIdx !== activeRoutineIdx) {
-                if (activeRoutineIdx !== -1) showToast(`🚀 Routine: ${ROUTINE[foundIdx].l}`);
-                activeRoutineIdx = foundIdx;
-            }
+            activeRoutineIdx = foundIdx;
 
-            // Progress bar (9 AM to 1 AM)
             const startDay = 9 * 60;
             const endDay = 25 * 60; 
             let curDay = nowMin < startDay ? nowMin + 1440 : nowMin;
             let pct = Math.max(0, Math.min(100, ((curDay - startDay) / (endDay - startDay)) * 100));
-            document.getElementById('rpFill').style.width = pct + '%';
-            document.getElementById('rpPercent').textContent = Math.round(pct) + '%';
+            if (document.getElementById('rpFill')) document.getElementById('rpFill').style.width = pct + '%';
+            if (document.getElementById('rpPercent')) document.getElementById('rpPercent').textContent = Math.round(pct) + '%';
         }
 
-        /* ─── HISTORY ──────────────────────────────── */
-        function saveHistory() {
-            let hist = {};
-            try { hist = JSON.parse(localStorage.getItem(HIST_KEY)) || {}; } catch(e){}
-            const d = getIST();
-            const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            hist[key] = { 
-                clients: state.clients.map(c => ({ 
-                    name:c.name, 
-                    done:state.checked[c.id].filter(Boolean).length, 
-                    total:c.tasks.length 
-                })) 
-            };
-            localStorage.setItem(HIST_KEY, JSON.stringify(hist));
-        }
-        function openHistory() {
-            const h = JSON.parse(localStorage.getItem(HIST_KEY) || '{}');
-            const body = document.getElementById('historyBody');
-            const entries = Object.entries(h).sort((a,b) => b[0].localeCompare(a[0]));
-            if(!entries.length) {
-                body.innerHTML = '<div style="color:var(--muted)">No history recorded yet.</div>';
-            } else {
-                body.innerHTML = entries.map(([k, v]) => `
-                    <div style="background:var(--card); padding:1.5rem; border-radius:20px; border:1px solid var(--border)">
-                        <div style="font-weight:900; color:var(--red-soft); margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem">${k}</div>
-                        <div style="display:flex; flex-direction:column; gap:0.6rem">
-                            ${v.clients.map(c => `
-                                <div style="display:flex; justify-content:space-between; font-size:0.85rem">
-                                    <span>${c.name}</span>
-                                    <span style="font-weight:700; color:${c.done===c.total?'var(--green-soft)':'var(--white)'}">${c.done}/${c.total}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('');
-            }
-            document.getElementById('historyModal').style.display='flex';
-        }
-        function closeHistory() { document.getElementById('historyModal').style.display='none'; }
-
-        /* ─── AUTH ─────────────────────────────────── */
-        async function checkAdminPass() {
-            const val = document.getElementById('adminPassInput').value;
-            const p = [0x57, 0x58, 0x4B, 0x5D, 0x55, 0x57, 0x50, 0x59, 0x56, 0x5F, 0x4A, 0x5B, 0x47, 0x51, 0x4B, 0x4C, 0x49, 0x51, 0x4C, 0x55];
-            const dec = p.map(c => String.fromCharCode(c ^ 0x3e)).join('');
-            
-            const hash = async (s) => {
-                const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-                return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('');
-            };
-            
-            if (await hash(val) === await hash(dec)) {
-                sessionStorage.setItem('adminAuth', '1');
-                document.getElementById('adminLock').style.display = 'none';
-                document.body.classList.remove('is-locked');
-                init();
-            } else {
-                const err = document.getElementById('lockError');
-                err.style.display = 'block';
-                setTimeout(() => err.style.display = 'none', 3000);
-            }
-        }
-
-        function exportAndSync() {
-            const btn = document.querySelector('.sync-btn');
-            btn.textContent = 'Saving...';
-            btn.classList.add('syncing');
-            
-            setTimeout(() => {
-                let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-                const blob = new Blob([html], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = 'index.html'; a.click();
-                
-                btn.textContent = '🔄 Update';
-                btn.classList.remove('has-changes', 'syncing');
-                showToast('✅ Saved! Push to GitHub now.');
-            }, 500);
-        }
-
-        function showToast(m) {
-            const t = document.getElementById('toast');
-            t.textContent = m; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3500);
-        }
-
-        window.onload = () => {
-            if (sessionStorage.getItem('adminAuth') === '1') {
-                document.getElementById('adminLock').style.display = 'none';
-                document.body.classList.remove('is-locked');
-                init();
-            } else {
-                document.getElementById('adminPassInput').focus();
-            }
-        };
-
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js");
-        }
+        // Initial Run
+        init();
     </script>
 </body>
 </html>

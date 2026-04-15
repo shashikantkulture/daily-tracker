@@ -48,40 +48,33 @@
     }
 
     /* ─── ANIMATED BG ─────────────────────────────────── */
+    .bg-glow-wrap {
+      position: fixed; inset: 0; z-index: -1; overflow: hidden;
+      pointer-events: none; background: var(--bg);
+    }
+    .glow-blob {
+      position: absolute; width: 60vw; height: 60vw;
+      border-radius: 50%; filter: blur(100px); opacity: 0.12;
+      animation: move-glow 25s infinite alternate ease-in-out;
+    }
+    .glow-1 { background: var(--blue); top: -10%; left: -5%; }
+    .glow-2 { background: var(--accent); bottom: -12%; right: -5%; animation-delay: -12.5s; }
+    
+    @keyframes move-glow {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      100% { transform: translate(12%, 12%) scale(1.15) rotate(15deg); }
+    }
+
     body::before {
       content: '';
       position: fixed;
       inset: 0;
       background-image:
-        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
-      background-size: 50px 50px;
+        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+      background-size: 64px 64px;
       z-index: 0;
       pointer-events: none;
-    }
-
-    body::after {
-      content: '';
-      position: fixed;
-      top: -150px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 900px;
-      height: 600px;
-      background: radial-gradient(ellipse, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
-      z-index: 0;
-      pointer-events: none;
-      animation: bgPulse 5s ease infinite alternate;
-    }
-
-    @keyframes bgPulse {
-      from {
-        opacity: .4
-      }
-
-      to {
-        opacity: 1
-      }
     }
 
     /* ─── LOGIN SCREEN ────────────────────────────────── */
@@ -898,10 +891,34 @@
         flex-direction: row;
       }
     }
+
+    /* ─── CLIENT QUOTE ─────────────────────────────────── */
+    .client-quote-bar {
+      background: rgba(37, 99, 235, 0.1);
+      border: 1px solid var(--border-bl);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-size: 0.95rem;
+      color: var(--white);
+      transition: all 0.5s ease;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0);
+    }
+    .client-quote-glow {
+      box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+      transform: translateY(-2px);
+    }
   </style>
 </head>
 
 <body>
+
+  <div class="bg-glow-wrap">
+    <div class="glow-blob glow-1"></div>
+    <div class="glow-blob glow-2"></div>
+  </div>
 
   <!-- LOGIN SCREEN -->
   <div id="loginScreen">
@@ -913,18 +930,18 @@
       </div>
 
       <div class="form-group">
-        <label for="loginUser">Username</label>
-        <input class="form-input" id="loginUser" type="text" placeholder="Enter your username"
+        <label for="loginUser">Email</label>
+        <input class="form-input" id="loginUser" type="text" placeholder="Enter your email"
           autocomplete="username" />
       </div>
       <div class="form-group">
         <label for="loginPass">Password</label>
         <input class="form-input" id="loginPass" type="password" placeholder="Enter your password"
-          autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" />
+          autocomplete="current-password" />
       </div>
 
-      <button class="login-btn" onclick="doLogin()">Sign In →</button>
-      <div class="login-error" id="loginError">❌ Incorrect username or password. Please try again.</div>
+      <button class="login-btn" id="loginBtn">Sign In →</button>
+      <div class="login-error" id="loginError">❌ Incorrect email or password. Please try again.</div>
 
       <div class="login-footer">Powered by Shashikant's Work Tracker</div>
     </div>
@@ -945,6 +962,39 @@
     </header>
 
     <div class="content">
+
+      <!-- CLIENT QUOTE NOTIFICATION (NEW) -->
+      <div class="client-quote-bar" id="clientQuoteBar">Loading message...</div>
+
+      <!-- PACKAGE TIMER (NEW) -->
+      <div id="packageTimer" class="progress-header" style="background: linear-gradient(135deg, #0f172a, #1e293b); padding: 1.2rem; border-color: var(--border-bl); display:none">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--blue-soft)">PACKAGE VALIDITY</span>
+              <span id="daysLeft" style="font-size:0.75rem; font-weight:700">-- days left</span>
+          </div>
+          <div class="prog-bar-wrap"><div id="packageProg" class="prog-bar-fill" style="width:0%"></div></div>
+      </div>
+
+      <!-- PERFORMANCE DASHBOARD (NEW) -->
+      <div class="section-title">Performance Insights</div>
+      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:1rem; margin-bottom:1.5rem">
+          <div class="add-section" style="margin-bottom:0; padding:1.2rem; text-align:center">
+              <div style="font-size:1.8rem; font-weight:900" id="statPosts">0</div>
+              <div style="font-size:0.65rem; color:var(--muted); font-weight:700; text-transform:uppercase">Posts Done</div>
+          </div>
+          <div class="add-section" style="margin-bottom:0; padding:1.2rem; text-align:center">
+              <div style="font-size:1.8rem; font-weight:900" id="statReels">0</div>
+              <div style="font-size:0.65rem; color:var(--muted); font-weight:700; text-transform:uppercase">Reels Done</div>
+          </div>
+          <div class="add-section" style="margin-bottom:0; padding:1.2rem; text-align:center">
+              <div style="font-size:1.4rem; font-weight:900; color:var(--green-soft)" id="statConsistency">0%</div>
+              <div style="font-size:0.65rem; color:var(--muted); font-weight:700; text-transform:uppercase">Consistency</div>
+          </div>
+          <div class="add-section" style="margin-bottom:0; padding:1.2rem; text-align:center">
+              <div style="font-size:1.4rem; font-weight:900; color:var(--blue-soft)" id="statGrowth">+0%</div>
+              <div style="font-size:0.65rem; color:var(--muted); font-weight:700; text-transform:uppercase">Growth</div>
+          </div>
+      </div>
 
       <!-- DONE BANNER -->
       <div class="done-banner" id="doneBanner">
@@ -969,196 +1019,255 @@
       <div class="tasks-list" id="tasksList">
         <!-- Injected by JS -->
       </div>
+      
+      <!-- ACTIVITY LOG (NEW) -->
+      <div class="section-title">Recent Activity</div>
+      <div id="activityLog" style="margin-bottom:2rem; font-size:0.8rem; font-weight:500; color:var(--muted)">
+          <div style="padding:1rem; border:1px dashed var(--border); border-radius:10px; text-align:center">No recent activity logs...</div>
+      </div>
 
       <!-- ADD TASK -->
       <div class="add-section">
         <div class="add-section-title">Request New Task</div>
         <div class="add-row">
-          <input class="add-input" id="newTaskInput" placeholder="Describe a task to add…"
-            onkeydown="if(event.key==='Enter')addClientTask()" />
-          <button class="add-btn" onclick="addClientTask()">+ Add</button>
+          <input class="add-input" id="newTaskInput" placeholder="Describe a task to add…" />
+          <button class="add-btn" id="addTaskBtn">+ Add</button>
         </div>
       </div>
 
     </div>
 
     <footer class="client-footer">
-      Client Portal &nbsp;|&nbsp; All tasks are synced with admin &nbsp;|&nbsp; © Shashikant
+      Client SaaS Portal &nbsp;|&nbsp; Secure Real-time Sync &nbsp;|&nbsp; © Shashikant
     </footer>
   </div>
 
-  <!-- TOAST -->
-  <div class="toast" id="toast"></div>
+  <!-- WORKING POPUP (REAL-TIME) -->
+  <div id="workingOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; display:none; align-items:center; justify-content:center; backdrop-filter:blur(8px)">
+      <div class="add-section" style="text-align:center; padding:3rem; max-width:90%">
+          <div style="font-size:3rem; margin-bottom:1rem">🚀</div>
+          <h2 style="font-size:1.5rem; font-weight:900; margin-bottom:0.5rem">Working on your brand...</h2>
+          <p style="color:var(--muted); font-size:0.9rem">Shashikant just started a focused work session for you.</p>
+      </div>
+  </div>
 
-  <script>
-    /* ═══════════════════════════════════════════════
-       CLIENT CREDENTIALS  (change passwords here)
-       IMPORTANT: These are stored in the source code.
-       For real security, use a proper backend.
-    ═══════════════════════════════════════════════ */
-    const CLIENT_CREDENTIALS = [
-      { id: 'digital_juggler', name: 'Digital Juggler', user: 'digitaljuggler', pass: 'juggler@2024', initials: 'DJ' },
-      { id: 'kalraj_thakur', name: 'Kalraj Thakur', user: 'kalraj', pass: 'kalraj@2024', initials: 'KT' },
-      { id: 'shikhar', name: 'Shikhar', user: 'shikhar', pass: 'shikhar@2024', initials: 'SK' },
-      { id: 'flowgreen', name: 'Flowgreen', user: 'flowgreen', pass: 'flow@2024', initials: 'FG' },
-      { id: 'growgreen', name: 'Growgreen', user: 'growgreen', pass: 'grow@2024', initials: 'GG' },
-      { id: 'sam_renissa', name: 'Sam Renissa', user: 'samrenissa', pass: 'sam@2024', initials: 'SR' },
-      { id: 'varchas', name: 'Varchas', user: 'varchas', pass: 'varchas@2024', initials: 'VC' }
-    ];
+  <!-- SUPABASE LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    const STORE_KEY = 'shashi_v3';       // Same key as admin page — shared localStorage
-    const SESSION_KEY = 'client_session';  // Which client is logged in
+  <!-- MODULAR SAAS LOGIC -->
+  <script type="module">
+    import supabase from './js/supabaseClient.js';
+    import { checkSession, login, logout } from './js/auth.js';
+    import { fetchStats, calculateConsistency } from './js/dashboard.js';
+    import { updatePackageTimer, showValueCalculator, renderEmojiPicker } from './js/ui-addons.js';
+    import { subscribeToClientData } from './js/realtime.js';
 
-    /* ─── STATE ──────────────────────────────────── */
     let currentClient = null;
-    let appState = { clients: [], checked: {}, timerResults: {}, backlogNotes: {} };
+    let state = { tasks: [], stats: {}, package: null, sessions: [], feedback: [] };
 
-    /* ─── INIT ───────────────────────────────────── */
-    window.onload = () => {
-      // Check existing session
-      const saved = sessionStorage.getItem(SESSION_KEY);
-      if (saved) {
-        const cred = CLIENT_CREDENTIALS.find(c => c.id === saved);
-        if (cred) { loginSuccess(cred); return; }
-      }
-      // Focus username input
-      document.getElementById('loginUser').focus();
+    const CLIENT_QUOTES = [
+        "Great things take time. Thank you for your patience.",
+        "Behind every pixel is a human pushing boundaries.",
+        "We are crafting your vision. Perfection cannot be rushed.",
+        "Quality work is a human process. We appreciate your trust.",
+        "Please wait while we perfect your task. Every person is human."
+    ];
+    let clientQuoteIdx = 0;
+    function rotateClientQuotes() {
+        const qBar = document.getElementById('clientQuoteBar');
+        if (!qBar) return;
+        qBar.classList.remove('client-quote-glow');
+        setTimeout(() => {
+            qBar.textContent = CLIENT_QUOTES[clientQuoteIdx];
+            qBar.classList.add('client-quote-glow');
+            clientQuoteIdx = (clientQuoteIdx + 1) % CLIENT_QUOTES.length;
+        }, 500);
+    }
+
+    async function init() {
+        const authData = await checkSession('client');
+        if (!authData) {
+            document.getElementById('loginScreen').style.display = 'flex';
+            return;
+        }
+
+        const { session, profile } = authData;
+        
+        rotateClientQuotes();
+        setInterval(rotateClientQuotes, 10000);
+
+        const { data: clients } = await supabase.from('clients').select('*').eq('user_id', session.user.id);
+        
+        if (!clients || !clients.length) {
+            alert("No client account found for this user.");
+            return;
+        }
+
+        currentClient = clients[0];
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').classList.add('visible');
+        document.getElementById('clientAvatar').textContent = currentClient.business_name.substring(0, 2).toUpperCase();
+        document.getElementById('clientNameDisplay').textContent = `Hello, ${currentClient.business_name} 👋`;
+
+        await refreshData();
+        
+        // ROI Popup Logic (10 seconds)
+        setTimeout(() => {
+            if (state.stats.posts_count > 0 || state.stats.reels_count > 0) {
+                showValueCalculator(state.stats);
+            }
+        }, 10000);
+
+        // Real-time
+        subscribeToClientData(currentClient.id, () => refreshData());
+    }
+
+    async function refreshData() {
+        const [t, s, p, ses, f] = await Promise.all([
+            supabase.from('tasks').select('*').eq('client_id', currentClient.id).order('created_at', { ascending: false }),
+            fetchStats(currentClient.id),
+            supabase.from('packages').select('*').eq('client_id', currentClient.id).maybeSingle(),
+            supabase.from('work_sessions').select('*').eq('client_id', currentClient.id).order('start_time', { ascending: false }).limit(5),
+            supabase.from('emoji_feedback').select('*').eq('client_id', currentClient.id)
+        ]);
+
+        state.tasks = t.data || [];
+        state.stats = s;
+        state.package = p.data;
+        state.sessions = ses.data || [];
+        state.feedback = f.data || [];
+
+        renderTasks();
+        renderStats();
+        renderPackage();
+        renderActivity();
+        
+        // Real-time sessions overlay
+        const active = state.sessions.find(s => s.is_active);
+        document.getElementById('workingOverlay').style.display = active ? 'flex' : 'none';
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('tasksList');
+        const tasks = state.tasks;
+        const done = tasks.filter(t => t.status === 'completed').length;
+        const total = tasks.length;
+        const pct = total > 0 ? (done / total) * 100 : 0;
+        const allDone = total > 0 && done === total;
+
+        document.getElementById('phPill').textContent = `${done} / ${total}`;
+        document.getElementById('phBar').style.width = `${pct}%`;
+        document.getElementById('doneBanner').className = `done-banner ${allDone ? 'show' : ''}`;
+
+        if (!tasks.length) {
+            list.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted)">No tasks assigned yet.</div>`;
+            return;
+        }
+
+        list.innerHTML = tasks.map((t) => {
+            const taskFeedback = state.feedback.filter(f => f.task_id === t.id);
+            const myEmoji = taskFeedback.find(f => f.client_id === currentClient.id)?.emoji;
+            
+            return `
+                <div class="task-item ${t.status === 'completed' ? 'done' : ''}" onclick="window.toggleTask('${t.id}', '${t.status === 'completed' ? 'pending' : 'completed'}')">
+                    <div class="task-checkbox">${t.status === 'completed' ? '✓' : ''}</div>
+                    <div style="flex:1">
+                        <div class="task-label">${escHtml(t.title)}</div>
+                        <div id="feedback-${t.id}" style="margin-top:0.5rem; display:flex; gap:0.6rem; align-items:center">
+                            ${renderEmojiPicker(t.id, currentClient.id)}
+                            ${myEmoji ? `<span style="margin-left:auto; font-size:0.7rem; color:var(--blue-soft); font-weight:700">YOUR REACTION: ${myEmoji}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderStats() {
+        document.getElementById('statPosts').textContent = state.stats.posts_count || 0;
+        document.getElementById('statReels').textContent = state.stats.reels_count || 0;
+        calculateConsistency(currentClient.id).then(c => document.getElementById('statConsistency').textContent = c + '%');
+    }
+
+    function renderPackage() {
+        if (!state.package) return;
+        const timer = document.getElementById('packageTimer');
+        timer.style.display = 'block';
+        const { diffDays, progress } = updatePackageTimer(state.package);
+        document.getElementById('daysLeft').textContent = `${diffDays} days left`;
+        document.getElementById('packageProg').style.width = `${progress}%`;
+    }
+
+    function renderActivity() {
+        const log = document.getElementById('activityLog');
+        if (!state.sessions.length) return;
+        
+        log.innerHTML = state.sessions.map(s => `
+            <div style="padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.8rem">
+                <span>${s.is_active ? '🔵' : '✅'}</span>
+                <div>
+                    <div style="font-size:0.85rem">${s.is_active ? 'Currently working on your brand...' : `Session completed: ${Math.round(s.duration_minutes)} mins spent.`}</div>
+                    <div style="font-size:0.65rem; color:var(--muted)">${new Date(s.start_time).toLocaleString()}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- UTILITIES ---
+    window.saveEmoji = async (taskId, clientId, emoji) => {
+        const { error } = await supabase.from('emoji_feedback').upsert({
+            task_id: taskId,
+            client_id: clientId,
+            emoji: emoji
+        }, { onConflict: 'task_id,client_id' });
+        
+        if (error) {
+            await supabase.from('emoji_feedback').insert([{ task_id: taskId, client_id: clientId, emoji }]);
+        }
+        refreshData();
+        showToast('Thanks for the feedback! ' + emoji);
     };
 
-    /* ─── LOGIN ──────────────────────────────────── */
-    function doLogin() {
-      const user = document.getElementById('loginUser').value.trim().toLowerCase();
-      const pass = document.getElementById('loginPass').value.trim();
-      const cred = CLIENT_CREDENTIALS.find(c =>
-        c.user.toLowerCase() === user && c.pass === pass
-      );
-      if (cred) {
-        loginSuccess(cred);
-      } else {
-        const err = document.getElementById('loginError');
-        err.classList.add('show');
-        document.getElementById('loginPass').value = '';
-        setTimeout(() => err.classList.remove('show'), 4000);
-      }
-    }
+    window.doLogin = async () => {
+        console.log("Client login attempt...");
+        const email = document.getElementById('loginUser').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        if (!email || !pass) return;
 
-    function loginSuccess(cred) {
-      currentClient = cred;
-      sessionStorage.setItem(SESSION_KEY, cred.id);
+        try {
+            await login(email, pass);
+            console.log("Login success.");
+        } catch (e) {
+            console.error("Login failed:", e);
+            const err = document.getElementById('loginError');
+            err.textContent = "❌ " + (e.message || "Incorrect email or password.");
+            err.classList.add('show');
+            setTimeout(() => err.classList.remove('show'), 4000);
+        }
+    };
 
-      // Hide login, show app
-      document.getElementById('loginScreen').style.display = 'none';
-      const app = document.getElementById('app');
-      app.classList.add('visible');
+    // Attach Listeners
+    document.getElementById('loginBtn').onclick = () => window.doLogin();
+    document.getElementById('loginPass').onkeydown = (e) => {
+        if (e.key === 'Enter') window.doLogin();
+    };
 
-      // Set header
-      document.getElementById('clientAvatar').textContent = cred.initials;
-      document.getElementById('clientNameDisplay').textContent = `Hello, ${cred.name} 👋`;
-      document.getElementById('clientSubtitle').textContent = 'Here are your tasks for today';
+    window.toggleTask = async (id, status) => {
+        await supabase.from('tasks').update({ status }).eq('id', id);
+    };
 
-      loadState();
-      renderTasks();
-    }
+    window.doLogout = () => logout();
 
-    function doLogout() {
-      sessionStorage.removeItem(SESSION_KEY);
-      location.reload();
-    }
+    document.getElementById('addTaskBtn').onclick = async () => {
+        const title = document.getElementById('newTaskInput').value.trim();
+        if (!title) return;
+        await supabase.from('tasks').insert([{ title, client_id: currentClient.id }]);
+        document.getElementById('newTaskInput').value = '';
+        showToast('✅ Task request sent!', 'success');
+    };
 
-    /* ─── LOAD STATE (shared with admin) ─────────── */
-    function loadState() {
-      try {
-        const s = localStorage.getItem(STORE_KEY);
-        if (s) appState = JSON.parse(s);
-      } catch (e) { }
-
-      // Ensure this client's task array exists
-      const clientExists = appState.clients?.find(c => c.id === currentClient.id);
-      if (!clientExists) {
-        if (!appState.clients) appState.clients = [];
-        // Try to match from DEFAULT in admin page via localStorage, or create fresh
-        appState.clients.push({ id: currentClient.id, name: currentClient.name, tasks: [] });
-      }
-      if (!Array.isArray(appState.checked[currentClient.id])) {
-        appState.checked = appState.checked || {};
-        appState.checked[currentClient.id] = [];
-      }
-      // Sync checked array length
-      const c = appState.clients.find(c => c.id === currentClient.id);
-      while (appState.checked[currentClient.id].length < c.tasks.length)
-        appState.checked[currentClient.id].push(false);
-      appState.checked[currentClient.id].length = c.tasks.length;
-    }
-
-    function saveState() {
-      localStorage.setItem(STORE_KEY, JSON.stringify(appState));
-    }
-
-    /* ─── RENDER TASKS ───────────────────────────── */
-    function renderTasks() {
-      const client = appState.clients.find(c => c.id === currentClient.id);
-      const checked = appState.checked[currentClient.id] || [];
-      const tasks = client?.tasks || [];
-      const done = checked.filter(Boolean).length;
-      const total = tasks.length;
-      const pct = total > 0 ? (done / total) * 100 : 0;
-      const allDone = total > 0 && done === total;
-
-      // Progress header
-      document.getElementById('phPill').textContent = `${done} / ${total}`;
-      document.getElementById('phPill').className = `ph-pill ${allDone ? 'done' : ''}`;
-      document.getElementById('phBar').style.width = `${pct}%`;
-      document.getElementById('progressHeader').className = `progress-header ${allDone ? 'done-prog' : ''}`;
-      document.getElementById('doneBanner').className = `done-banner ${allDone ? 'show' : ''}`;
-
-      // Tasks
-      const list = document.getElementById('tasksList');
-      if (tasks.length === 0) {
-        list.innerHTML = `
-      <div style="text-align:center;padding:2.5rem 1rem;color:var(--muted);">
-        <div style="font-size:2rem;margin-bottom:.6rem;">📭</div>
-        <div style="font-size:.9rem;">No tasks assigned yet.<br>Add one below or wait for Shashikant to assign tasks.</div>
-      </div>`;
-        return;
-      }
-
-      list.innerHTML = tasks.map((t, i) => `
-    <div class="task-item ${checked[i] ? 'done' : ''}" onclick="toggleClientTask(${i})">
-      <div class="task-checkbox">${checked[i] ? '✓' : ''}</div>
-      <span class="task-label">${escHtml(t)}</span>
-      <span class="task-tag">${checked[i] ? '✅ Done' : '⏳ Pending'}</span>
-    </div>
-  `).join('');
-    }
-
-    function toggleClientTask(idx) {
-      loadState(); // Always reload to get latest admin changes
-      const cid = currentClient.id;
-      if (!Array.isArray(appState.checked[cid])) appState.checked[cid] = [];
-      const client = appState.clients.find(c => c.id === cid);
-      while (appState.checked[cid].length < client.tasks.length)
-        appState.checked[cid].push(false);
-      appState.checked[cid][idx] = !appState.checked[cid][idx];
-      saveState();
-      renderTasks();
-      const isDone = appState.checked[cid][idx];
-      showToast(isDone ? '✅ Task marked complete!' : '↩️ Task marked pending', 'success');
-    }
-
-    function addClientTask() {
-      const inp = document.getElementById('newTaskInput');
-      const val = inp.value.trim();
-      if (!val) return;
-      loadState();
-      const client = appState.clients.find(c => c.id === currentClient.id);
-      if (!client) return;
-      client.tasks.push(val);
-      appState.checked[currentClient.id].push(false);
-      saveState();
-      inp.value = '';
-      renderTasks();
-      showToast('✅ Task added successfully!', 'success');
-    }
+    // Initial Run
+    init();
 
     /* ─── HELPERS ────────────────────────────────── */
     function escHtml(s) {
