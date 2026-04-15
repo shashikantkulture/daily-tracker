@@ -300,11 +300,34 @@
     }
     .timer-digits {
       font-size:1.9rem; font-family:'SFMono-Regular',Consolas,monospace;
-      font-weight:700; color:var(--white); letter-spacing:.06em;
+      font-weight:700; color:var(--white); letter-spacing:.04em;
       text-shadow:0 0 20px rgba(220,38,38,.4);
+      transition:color .2s;
     }
-    .timer-running .timer-digits { color:var(--red-soft); }
-    .timer-btns { display:flex; gap:.55rem; }
+    .timer-ms {
+      font-size:1.1rem; font-weight:600;
+      color:var(--muted); opacity:.8; vertical-align:baseline;
+      font-family:'SFMono-Regular',Consolas,monospace;
+    }
+    .timer-running .timer-digits { color:var(--red-soft); text-shadow:0 0 30px rgba(220,38,38,.7); }
+    .timer-running .timer-ms    { color:var(--red-soft); opacity:.6; }
+    /* centiseconds flip animation */
+    @keyframes csFlip {
+      0%   { transform:translateY(0);   opacity:1; }
+      45%  { transform:translateY(-4px);opacity:.4; }
+      55%  { transform:translateY(4px); opacity:.4; }
+      100% { transform:translateY(0);   opacity:1; }
+    }
+    .timer-running .timer-ms { animation:csFlip .1s ease infinite; }
+    .timer-btns { display:flex; gap:.55rem; align-items:center; flex-wrap:wrap; }
+    .btn-reset {
+      background:rgba(255,255,255,.05); color:var(--muted);
+      border:1px solid var(--border); border-radius:9px;
+      padding:.5rem .85rem; font-size:.8rem; font-weight:700;
+      cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:.35rem;
+    }
+    .btn-reset:hover { background:rgba(220,38,38,.15); color:var(--red-soft); border-color:rgba(220,38,38,.4); }
+    .btn-reset:active { transform:scale(.93); }
     .btn {
       display:flex; align-items:center; gap:.4rem; padding:.5rem 1.1rem;
       border:none; border-radius:9px; font-weight:700; font-size:.82rem;
@@ -600,8 +623,8 @@ const DEFAULT_CLIENTS = [
   { id:"varchas",         name:"VARCHAS",           tasks:["Post (Alternate Day)"] }
 ];
 
-const TIMER_MAX   = 40 * 60;
-const STORE_KEY   = 'shashi_v3';
+const TIMER_MAX_CS = 40 * 60 * 100;  // 40 minutes in centiseconds
+const STORE_KEY    = 'shashi_v3';
 
 /* ═══════════════════════════════════════════
    APP STATE
@@ -615,8 +638,8 @@ let state = {
 
 let currentSlide  = 0;
 let intervals     = {};
-let timerSecs     = {};
-let activeBacklog = 0;  // which client tab is open in backlog
+let timerCs       = {};   // centiseconds remaining per client
+let activeBacklog = 0;    // which client tab is open in backlog
 
 /* ═══════════════════════════════════════════
    STORAGE
@@ -702,7 +725,7 @@ function buildColumn(client) {
   const allDone   = done === total && total > 0;
   const result    = state.timerResults[client.id] || '';
   const isRunning = !!intervals[client.id];
-  const secsLeft  = timerSecs[client.id] ?? TIMER_MAX;
+  const csLeft    = timerCs[client.id] ?? TIMER_MAX_CS;
 
   const tasksHTML = client.tasks.map((t, i) => `
     <div class="task-card ${checked[i] ? 'done' : ''}" id="tc-${client.id}-${i}">
@@ -718,13 +741,18 @@ function buildColumn(client) {
 
   let timerHTML;
   if (result) {
-    timerHTML = `<div class="timer-result-pill">⏱ ${result}</div>`;
+    timerHTML = `
+      <div class="timer-result-pill">⏱ ${result}</div>
+      <div class="timer-btns">
+        <button class="btn-reset" onclick="resetTimer('${client.id}')">↺ Reset</button>
+      </div>`;
   } else {
     timerHTML = `
-      <div class="timer-digits" id="td-${client.id}">${formatTime(secsLeft)}</div>
+      <div class="timer-digits" id="td-${client.id}">${formatTimeCsHtml(csLeft)}</div>
       <div class="timer-btns">
         <button class="btn btn-start" onclick="startTimer('${client.id}')" ${isRunning?'disabled':''}>▶ Start</button>
         <button class="btn btn-stop"  onclick="stopTimer('${client.id}')"  ${!isRunning?'disabled':''}>⏹ Stop</button>
+        <button class="btn-reset"    onclick="resetTimer('${client.id}')">↺ Reset</button>
       </div>`;
   }
 
@@ -863,24 +891,26 @@ function saveClientName(clientId) {
 }
 
 /* ═══════════════════════════════════════════
-   TIMER
+   TIMER  (centisecond precision)
 ═══════════════════════════════════════════ */
 function startTimer(clientId) {
   if (intervals[clientId]) return;
-  if (timerSecs[clientId] === undefined) timerSecs[clientId] = TIMER_MAX;
+  if (timerCs[clientId] === undefined) timerCs[clientId] = TIMER_MAX_CS;
 
   const card = document.getElementById(`timerCard-${clientId}`);
   if (card) card.classList.add('timer-running');
 
+  // Update every 50ms for smooth centisecond display
   intervals[clientId] = setInterval(() => {
-    if (timerSecs[clientId] > 0) {
-      timerSecs[clientId]--;
+    if (timerCs[clientId] > 0) {
+      timerCs[clientId] -= 5; // 50ms = 5 centiseconds
       const el = document.getElementById(`td-${clientId}`);
-      if (el) el.textContent = formatTime(timerSecs[clientId]);
+      if (el) el.innerHTML = formatTimeCsHtml(timerCs[clientId]);
     } else {
+      timerCs[clientId] = 0;
       stopTimer(clientId);
     }
-  }, 1000);
+  }, 50);
 
   const startBtn = document.querySelector(`#slide-${clientId} .btn-start`);
   const stopBtn  = document.querySelector(`#slide-${clientId} .btn-stop`);
@@ -893,15 +923,35 @@ function stopTimer(clientId) {
   clearInterval(intervals[clientId]);
   delete intervals[clientId];
 
-  const spent = TIMER_MAX - (timerSecs[clientId] ?? 0);
-  const mins  = Math.max(1, Math.ceil(spent / 60));
-  state.timerResults[clientId] = `Completed in ${mins} minute${mins > 1 ? 's' : ''}`;
+  const spentCs = TIMER_MAX_CS - (timerCs[clientId] ?? 0);
+  const mins    = Math.max(1, Math.ceil(spentCs / 6000)); // 6000 cs = 1 min
+  const secs    = Math.floor((spentCs % 6000) / 100);
+  state.timerResults[clientId] = `Completed in ${mins}m ${secs}s`;
   save();
   refreshSlide(clientId);
 }
 
-function formatTime(s) {
-  return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+function resetTimer(clientId) {
+  // Stop if running
+  if (intervals[clientId]) {
+    clearInterval(intervals[clientId]);
+    delete intervals[clientId];
+  }
+  // Clear centiseconds and result
+  timerCs[clientId] = TIMER_MAX_CS;
+  delete state.timerResults[clientId];
+  save();
+  refreshSlide(clientId);
+  showToast('⏱ Timer reset to 40:00', 'success', 2000);
+}
+
+// Returns HTML string with styled centiseconds
+function formatTimeCsHtml(cs) {
+  const totalSec = Math.floor(cs / 100);
+  const mins     = Math.floor(totalSec / 60);
+  const secs     = totalSec % 60;
+  const centis   = Math.floor((cs % 100) / 1);
+  return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}<span class="timer-ms">.${String(Math.floor(centis/10)).padStart(1,'0')}</span>`;
 }
 
 /* ═══════════════════════════════════════════
@@ -1044,7 +1094,7 @@ function checkAllDone() {
 function resetApp() {
   if (!confirm('Reset all tasks and timers for a fresh day?')) return;
   Object.values(intervals).forEach(clearInterval);
-  intervals = {}; timerSecs = {};
+  intervals = {}; timerCs = {};
   state = {
     clients: JSON.parse(JSON.stringify(DEFAULT_CLIENTS)),
     checked: {}, timerResults: {}, backlogNotes: {}
