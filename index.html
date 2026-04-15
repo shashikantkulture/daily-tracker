@@ -821,6 +821,100 @@
     }
     .lock-client-link a { color:var(--red-soft); text-decoration:none; font-weight:600; }
     .lock-client-link a:hover { text-decoration:underline; }
+
+
+    /* ─── SIDEON ROUTINE ASSISTANT (ADD-ON) ───────────── */
+    #sideonToggle {
+      position:fixed; right:1rem; top:50%; transform:translateY(-50%);
+      z-index:750; width:42px; height:42px; border-radius:12px;
+      border:1px solid var(--border-red);
+      background:rgba(22,10,10,.92); color:var(--red-soft);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:1rem; box-shadow:0 6px 24px rgba(0,0,0,.45);
+      transition:all .25s ease;
+    }
+    #sideonToggle:hover { background:rgba(220,38,38,.2); transform:translateY(-50%) scale(1.05); }
+
+    #sideonPanel {
+      position:fixed; top:1rem; right:1rem; bottom:1rem; width:320px;
+      z-index:740; border-radius:16px;
+      border:1px solid var(--border-red);
+      background:linear-gradient(160deg,#120a0a,#0e0909);
+      box-shadow:0 20px 50px rgba(0,0,0,.55), 0 0 28px rgba(220,38,38,.12);
+      transform:translateX(calc(100% + 1.5rem)); opacity:0;
+      transition:transform .35s cubic-bezier(.16,1,.3,1), opacity .25s ease;
+      display:flex; flex-direction:column; overflow:hidden; pointer-events:none;
+    }
+    #sideonPanel.open { transform:translateX(0); opacity:1; pointer-events:auto; }
+
+    .sideon-progress-track { height:3px; background:rgba(255,255,255,.08); }
+    .sideon-progress-fill {
+      height:100%; width:0%;
+      background:linear-gradient(90deg,var(--red),var(--red-soft));
+      box-shadow:0 0 14px rgba(220,38,38,.45);
+      transition:width .25s linear;
+    }
+    .sideon-head {
+      padding:.95rem 1rem .8rem; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .sideon-title { font-size:.85rem; font-weight:800; letter-spacing:.08em; color:var(--red-soft); }
+    .sideon-time { font-size:.72rem; color:var(--muted); }
+
+    .sideon-list { padding:.7rem; overflow-y:auto; display:flex; flex-direction:column; gap:.45rem; }
+    .sideon-list::-webkit-scrollbar { width:3px; }
+    .sideon-list::-webkit-scrollbar-thumb { background:var(--red-dim); border-radius:99px; }
+
+    .sideon-item {
+      border:1px solid var(--border); border-radius:11px;
+      background:rgba(255,255,255,.03); padding:.55rem .65rem;
+      display:flex; align-items:center; gap:.55rem; transition:all .22s ease;
+    }
+    .sideon-meta { flex:1; min-width:0; }
+    .sideon-slot { font-size:.68rem; color:var(--muted); letter-spacing:.04em; }
+    .sideon-task { font-size:.82rem; font-weight:600; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sideon-check {
+      width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,.22);
+      display:flex; align-items:center; justify-content:center; font-size:.62rem; cursor:pointer; color:transparent;
+      transition:all .2s ease; flex-shrink:0;
+    }
+    .sideon-item.done .sideon-check {
+      background:rgba(22,163,74,.95); border-color:rgba(22,163,74,.95); color:#fff;
+    }
+    .sideon-item.active {
+      border-color:var(--border-red); background:rgba(220,38,38,.12);
+      box-shadow:0 0 18px rgba(220,38,38,.24);
+      animation:sideonPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes sideonPulse {
+      0%,100%{ box-shadow:0 0 10px rgba(220,38,38,.18); }
+      50%{ box-shadow:0 0 22px rgba(220,38,38,.38); }
+    }
+
+    #sideonToastWrap {
+      position:fixed; right:1rem; bottom:1rem; z-index:760;
+      display:flex; flex-direction:column; gap:.45rem; pointer-events:none;
+    }
+    .sideon-toast {
+      background:#161616; border:1px solid var(--border-red); border-radius:10px;
+      color:var(--white); font-size:.78rem; font-weight:600;
+      padding:.6rem .85rem; box-shadow:0 10px 28px rgba(0,0,0,.45);
+      opacity:0; transform:translateY(10px); transition:all .25s ease;
+    }
+    .sideon-toast.show { opacity:1; transform:translateY(0); }
+
+    @media (max-width:580px) {
+      #sideonToggle { right:.6rem; top:auto; bottom:180px; transform:none; }
+      #sideonToggle:hover { transform:scale(1.04); }
+      #sideonPanel {
+        right:.5rem; left:.5rem; width:auto; top:auto; bottom:.5rem; max-height:78vh;
+        transform:translateY(calc(100% + 1rem));
+      }
+      #sideonPanel.open { transform:translateY(0); }
+      #sideonToastWrap { right:.5rem; left:.5rem; bottom:.6rem; }
+      .sideon-toast { font-size:.75rem; }
+    }
+
   </style>
 </head>
 <body>
@@ -889,6 +983,18 @@
     <button class="nav-btn primary" id="nextBtn" onclick="goSlide(1)">Next →</button>
   </nav>
 </div>
+
+<!-- SIDEON ADD-ON ROUTINE PANEL -->
+<button id="sideonToggle" type="button" aria-label="Toggle routine sidebar" title="Routine Assistant">🕘</button>
+<aside id="sideonPanel" aria-label="Routine assistant panel">
+  <div class="sideon-progress-track"><div class="sideon-progress-fill" id="sideonProgress"></div></div>
+  <div class="sideon-head">
+    <div class="sideon-title">ROUTINE TRACKER</div>
+    <div class="sideon-time" id="sideonIstClock">IST --:--</div>
+  </div>
+  <div class="sideon-list" id="sideonList"></div>
+</aside>
+<div id="sideonToastWrap" aria-live="polite" aria-atomic="false"></div>
 
 <!-- BACKLOG TRIGGER (floating pulsing button) -->
 <button id="backlogTrigger" onclick="openBacklog()">📋 Complete Backlog</button>
@@ -1028,6 +1134,7 @@ function init() {
   buildBacklogTabs();
   updateNav();
   updateCounter();
+  initSideon();
 
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -1466,6 +1573,141 @@ function dismissSavePrompt() {
   if (prompt) prompt.classList.remove('show');
   if (btn)    btn.classList.remove('has-changes');
   clearTimeout(savePromptTimer);
+}
+
+
+
+/* ═══════════════════════════════════════════
+   SIDEON ROUTINE ASSISTANT (IST)
+═══════════════════════════════════════════ */
+const SIDEON_SCHEDULE = [
+  { time:'9:00 – 9:30', task:'Plan Mode', start: 9*60, end: 9*60+30 },
+  { time:'9:30 – 11:30', task:'Deep Work', start: 9*60+30, end: 11*60+30 },
+  { time:'11:30 – 12:00', task:'Reset Break', start: 11*60+30, end: 12*60 },
+  { time:'12:00 – 2:00', task:'Execution', start: 12*60, end: 14*60 },
+  { time:'2:00 – 3:00', task:'Lunch Off', start: 14*60, end: 15*60 },
+  { time:'3:00 – 5:00', task:'Batch Mode', start: 15*60, end: 17*60 },
+  { time:'5:00 – 5:30', task:'Quick Break', start: 17*60, end: 17*60+30 },
+  { time:'5:30 – 6:30', task:'Client Sync', start: 17*60+30, end: 18*60+30 },
+  { time:'6:30 – 8:00', task:'Buffer Build', start: 18*60+30, end: 20*60 },
+  { time:'8:00 – 10:00', task:'Chill Time', start: 20*60, end: 22*60 },
+  { time:'10:00 – 11:00', task:'GF Time', start: 22*60, end: 23*60 },
+  { time:'11:00 – 1:00', task:'Night Grind', start: 23*60, end: 25*60 }
+];
+const SIDEON_STORE = 'sideon_routine_checks_v1';
+let sideonState = { open:false, checks:{}, lastActive:-2, ticker:null, checkDate:'' };
+
+function getIstDate() {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset()*60000;
+  return new Date(utc + 5.5*60*60*1000);
+}
+function getIstMinuteValue(d=getIstDate()) {
+  const h = d.getHours();
+  const m = d.getMinutes() + d.getSeconds()/60;
+  let total = h*60 + m;
+  if (h < 9) total += 1440;
+  return total;
+}
+function getIstDateKey(d=getIstDate()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function sideonLoadChecks(){
+  const istNow = getIstDate();
+  const todayKey = getIstDateKey(istNow);
+  sideonState.checkDate = todayKey;
+  try {
+    const payload = JSON.parse(localStorage.getItem(SIDEON_STORE)) || {};
+    sideonState.checks = payload.date === todayKey ? (payload.checks || {}) : {};
+  } catch(e) { sideonState.checks = {}; }
+}
+function sideonSaveChecks(){
+  localStorage.setItem(SIDEON_STORE, JSON.stringify({ date:sideonState.checkDate, checks:sideonState.checks }));
+}
+function renderSideonList() {
+  const list = document.getElementById('sideonList');
+  list.innerHTML = SIDEON_SCHEDULE.map((item, idx) => {
+    const done = !!sideonState.checks[idx];
+    return `<div class="sideon-item ${done?'done':''}" id="sideonItem-${idx}">
+      <button class="sideon-check" type="button" onclick="toggleSideonDone(${idx})" title="Mark completed">✓</button>
+      <div class="sideon-meta"><div class="sideon-slot">${item.time}</div><div class="sideon-task">${item.task}</div></div>
+    </div>`;
+  }).join('');
+}
+function toggleSideonDone(idx){
+  sideonState.checks[idx] = !sideonState.checks[idx];
+  sideonSaveChecks();
+  const card = document.getElementById(`sideonItem-${idx}`);
+  if (card) card.classList.toggle('done', !!sideonState.checks[idx]);
+}
+function sideonToast(msg){
+  const wrap = document.getElementById('sideonToastWrap');
+  const t = document.createElement('div');
+  t.className = 'sideon-toast';
+  t.textContent = msg;
+  wrap.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => t.classList.remove('show'), 2600);
+  setTimeout(() => t.remove(), 3000);
+}
+function getActiveRoutineIndex(minVal){
+  for (let i=0;i<SIDEON_SCHEDULE.length;i++) {
+    const r = SIDEON_SCHEDULE[i];
+    if (minVal >= r.start && minVal < r.end) return i;
+  }
+  return -1;
+}
+function updateSideonLive(){
+  const now = getIstDate();
+  const minVal = getIstMinuteValue(now);
+  const activeIdx = getActiveRoutineIndex(minVal);
+  const start = 9*60;
+  const end = 25*60;
+  const pct = Math.max(0, Math.min(100, ((minVal - start) / (end - start)) * 100));
+
+  document.getElementById('sideonProgress').style.width = `${pct}%`;
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('sideonIstClock').textContent = `IST ${hh}:${mm}`;
+
+  SIDEON_SCHEDULE.forEach((_, idx) => {
+    const card = document.getElementById(`sideonItem-${idx}`);
+    if (card) card.classList.toggle('active', idx === activeIdx);
+  });
+
+  if (activeIdx !== sideonState.lastActive) {
+    if (!sideonState.open && activeIdx >= 0 && sideonState.lastActive !== -2) {
+      sideonToast(`${SIDEON_SCHEDULE[activeIdx].task} started`);
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+    sideonState.lastActive = activeIdx;
+    if (activeIdx >= 0) {
+      const activeEl = document.getElementById(`sideonItem-${activeIdx}`);
+      if (activeEl) activeEl.scrollIntoView({ block:'nearest', behavior:'smooth' });
+    }
+  }
+}
+function initSideon(){
+  sideonLoadChecks();
+  renderSideonList();
+  const panel = document.getElementById('sideonPanel');
+  const toggle = document.getElementById('sideonToggle');
+  toggle.addEventListener('click', () => {
+    sideonState.open = !sideonState.open;
+    panel.classList.toggle('open', sideonState.open);
+    toggle.textContent = sideonState.open ? '✕' : '🕘';
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sideonState.open) {
+      sideonState.open = false;
+      panel.classList.remove('open');
+      toggle.textContent = '🕘';
+    }
+  });
+  if (sideonState.ticker) clearInterval(sideonState.ticker);
+  sideonState.lastActive = -2;
+  updateSideonLive();
+  sideonState.ticker = setInterval(updateSideonLive, 1000);
 }
 
 /* ═══════════════════════════════════════════
