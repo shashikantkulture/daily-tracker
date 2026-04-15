@@ -275,11 +275,71 @@
     }
 
     /* MOBILE */
+    /* MOBILE — phones */
     @media (max-width:540px) {
-      .login-card { padding:2rem 1.5rem; }
-      .top-bar { padding:.9rem 1.2rem; }
-      .content { padding:1.5rem 1rem 3rem; }
-      .ph-title { font-size:1.2rem; }
+      /* Login */
+      .login-card    { padding:2rem 1.4rem; border-radius:22px; max-width:92vw; }
+      .login-logo h1 { font-size:1.3rem; }
+      .login-logo p  { font-size:.75rem; }
+      .login-logo .icon { font-size:2.2rem; }
+      .form-group label { font-size:.7rem; }
+      .form-input    { font-size:.88rem; padding:.7rem .9rem; }
+      .login-btn     { font-size:.9rem; padding:.8rem; }
+      .login-error   { font-size:.76rem; }
+      .login-footer  { font-size:.7rem; }
+
+      /* Top bar */
+      .top-bar       { padding:.75rem 1rem; gap:.6rem; }
+      .top-bar-left  { gap:.6rem; }
+      .client-avatar { width:32px; height:32px; font-size:.75rem; }
+      .top-bar-left h1 { font-size:.95rem; }
+      .top-bar-left p  { font-size:.68rem; }
+      .logout-btn    { padding:.35rem .7rem; font-size:.72rem; }
+
+      /* Content */
+      .content       { padding:1.3rem .9rem 3rem; }
+
+      /* Progress header */
+      .progress-header { padding:1.2rem 1.2rem 1rem; border-radius:16px; margin-bottom:1.1rem; }
+      .ph-title      { font-size:1.15rem; }
+      .ph-pill       { font-size:.68rem; padding:.22rem .6rem; }
+      .prog-bar-wrap { height:3px; }
+
+      /* Section title */
+      .section-title { font-size:.65rem; }
+
+      /* Task items */
+      .task-item     { padding:.8rem 1rem; gap:.7rem; border-radius:11px; }
+      .task-checkbox { width:20px; height:20px; font-size:.68rem; }
+      .task-label    { font-size:.88rem; }
+      .task-tag      { font-size:.6rem; padding:.15rem .4rem; }
+
+      /* Add section */
+      .add-section   { padding:1rem 1.1rem; border-radius:13px; }
+      .add-section-title { font-size:.68rem; }
+      .add-row       { flex-direction:column; gap:.5rem; }
+      .add-input     { padding:.6rem .8rem; font-size:.85rem; }
+      .add-btn       { padding:.6rem; font-size:.82rem; width:100%; }
+
+      /* Done banner */
+      .done-banner   { padding:1.1rem 1.2rem; border-radius:13px; }
+      .done-banner .big-check { font-size:2rem; }
+      .done-banner h3 { font-size:1.05rem; }
+      .done-banner p  { font-size:.78rem; }
+
+      /* Toast */
+      .toast         { bottom:15px; font-size:.76rem; padding:.5rem 1rem; max-width:88vw; white-space:normal; text-align:center; border-radius:10px; }
+
+      /* Footer */
+      .client-footer { font-size:.65rem; padding:1rem; }
+    }
+
+    /* MOBILE — tablets */
+    @media (max-width:768px) and (min-width:541px) {
+      .content       { padding:1.5rem 1.2rem 3.5rem; }
+      .login-card    { max-width:400px; }
+      .ph-title      { font-size:1.3rem; }
+      .add-row       { flex-direction:row; }
     }
   </style>
 </head>

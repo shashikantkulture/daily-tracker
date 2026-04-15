@@ -517,18 +517,125 @@
     .popup-reset-btn:hover { background:rgba(255,255,255,.1); transform:translateY(-2px); }
 
     /* ─── MOBILE ─────────────────────────────── */
+    /* ─── MOBILE ─── small phones ─────────────── */
     @media (max-width:580px) {
-      .top-bar { padding:.9rem 1.1rem; }
-      .top-bar-left h1 { font-size:1.15rem; }
-      .bottom-nav { padding:.6rem .9rem; }
-      .nav-btn { padding:.48rem .8rem; font-size:.78rem; }
-      .slide { padding:1.4rem .9rem 7rem; }
-      .client-name-editable, .client-name-input { font-size:1.3rem; }
-      .timer-digits { font-size:1.5rem; }
-      .popup-box { padding:1.8rem; }
-      .bp-header { padding:1rem 1.2rem .6rem; }
-      .bp-tabs { padding:.1rem 1.2rem .6rem; }
-      .bp-blocks { padding:.1rem 1.2rem 1.2rem; }
+      /* Top bar */
+      .top-bar { padding:.7rem .9rem; gap:.5rem; flex-wrap:wrap; }
+      .top-bar-left h1 { font-size:1.05rem; }
+      .top-bar-left p  { font-size:.68rem; }
+      .top-bar-right   { gap:.45rem; flex-wrap:wrap; justify-content:flex-end; }
+      .slide-counter   { font-size:.75rem; }
+      .sync-btn        { padding:.35rem .7rem; font-size:.7rem; }
+      .cal-btn, .yt-btn { width:30px; height:30px; font-size:.88rem; }
+
+      /* Slider + cards */
+      .slide          { padding:1.2rem .8rem 7rem; }
+      .client-header-card { padding:1.3rem 1.2rem 1.1rem; border-radius:16px; }
+      .client-name-editable, .client-name-input { font-size:1.15rem; }
+      .client-column  { max-width:100%; }
+
+      /* Tasks */
+      .task-card      { padding:.8rem 1rem; gap:.6rem; border-radius:10px; }
+      .task-name      { font-size:.88rem; }
+      .task-actions    { opacity:1; } /* Always show on mobile — no hover */
+      .task-icon-btn  { width:24px; height:24px; font-size:.68rem; }
+
+      /* Add task */
+      .add-task-row   { flex-direction:column; gap:.5rem; }
+      .add-task-input { padding:.6rem .8rem; font-size:.85rem; }
+      .add-task-btn   { padding:.6rem; font-size:.82rem; width:100%; }
+
+      /* Timer */
+      .timer-card     { padding:.8rem 1rem; flex-direction:column; align-items:stretch; gap:.7rem; }
+      .timer-digits   { font-size:1.5rem; text-align:center; }
+      .timer-ms       { font-size:.9rem; }
+      .timer-btns     { justify-content:center; gap:.5rem; }
+      .btn            { padding:.45rem .8rem; font-size:.78rem; }
+      .btn-reset      { padding:.4rem .7rem; font-size:.75rem; }
+
+      /* Bottom nav */
+      .bottom-nav     { padding:.55rem .7rem; }
+      .nav-btn        { padding:.42rem .65rem; font-size:.75rem; }
+      .dot-indicators { gap:.3rem; }
+      .dot            { width:5px; height:5px; }
+      .dot.active     { width:16px; }
+
+      /* Progress pill / bar */
+      .progress-pill  { font-size:.68rem; padding:.2rem .55rem; }
+      .prog-bar-wrap  { height:2px; }
+
+      /* Quote */
+      .quote-bar      { padding:.4rem 1rem; font-size:.7rem; }
+
+      /* Save prompt */
+      #savePrompt     { bottom:70px; padding:.75rem 1rem; gap:.6rem; flex-wrap:wrap; justify-content:center; border-radius:14px; white-space:normal; max-width:92vw; }
+      .sp-text        { font-size:.78rem; text-align:center; }
+      .sp-text span   { display:block; }
+      .sp-btns        { margin-left:0; }
+      .sp-save        { font-size:.75rem; padding:.4rem .9rem; }
+      .sp-dismiss     { font-size:.75rem; padding:.4rem .65rem; }
+
+      /* Popup */
+      .popup-box      { padding:1.5rem 1.2rem; border-radius:20px; }
+      .popup-emoji    { font-size:2.5rem; }
+      .popup-box h2   { font-size:1.4rem; }
+      .popup-box p    { font-size:.85rem; }
+      .popup-reset-btn { font-size:.85rem; padding:.6rem 1.5rem; }
+
+      /* Backlog panel */
+      #backlogPanel   { max-width:100%; border-radius:18px 18px 0 0; }
+      .bp-header      { padding:.85rem 1rem .5rem; }
+      .bp-title       { font-size:1.05rem; }
+      .bp-tabs        { padding:.1rem 1rem .5rem; gap:.4rem; }
+      .bp-tab         { padding:.3rem .75rem; font-size:.72rem; }
+      .bp-blocks      { padding:.1rem 1rem 1rem; }
+      .bp-textarea    { min-height:110px; font-size:.85rem; padding:.8rem; border-radius:10px; }
+      .bp-save-note   { font-size:.76rem; padding:.4rem 1rem; }
+      #backlogTrigger { font-size:.78rem; padding:.55rem 1.3rem; bottom:70px; }
+
+      /* Lock screen */
+      .lock-card      { padding:2rem 1.5rem; border-radius:20px; max-width:90vw; }
+      .lock-top h2    { font-size:1.25rem; }
+      .lock-top p     { font-size:.74rem; }
+      .lock-icon      { font-size:2.2rem !important; }
+      .lock-input     { font-size:.88rem; padding:.7rem .9rem; }
+      .lock-btn       { font-size:.88rem; padding:.75rem; }
+      .lock-error     { font-size:.75rem; }
+
+      /* History modal */
+      .hm-header      { padding:.9rem 1.2rem; }
+      .hm-title       { font-size:1rem; }
+      .hm-body        { padding:1rem; }
+      .hm-day         { border-radius:11px; }
+      .hm-day-header  { padding:.7rem .9rem; flex-wrap:wrap; gap:.4rem; }
+      .hm-date        { font-size:.82rem; }
+      .hm-overall-pill { font-size:.66rem; }
+      .hm-clients-grid { grid-template-columns:repeat(2,1fr); gap:.45rem; padding:.7rem .9rem; }
+      .hm-client-name { font-size:.62rem; }
+      .hm-client-score { font-size:.92rem; }
+
+      /* Backlog stats popup */
+      #backlogStatsTrigger { font-size:.7rem; padding:.4rem .8rem; bottom:115px; right:1rem; }
+      #backlogStats   { right:.8rem; bottom:115px; max-width:85vw; padding:.7rem .9rem; border-radius:13px; }
+      .bs-title       { font-size:.76rem; }
+      .bs-total       { font-size:1.4rem; }
+      .bs-label       { font-size:.65rem; }
+      .bs-day-chip    { font-size:.6rem; padding:.15rem .4rem; }
+
+      /* Toast */
+      .toast          { bottom:20px; font-size:.78rem; padding:.55rem 1rem; max-width:88vw; white-space:normal; text-align:center; border-radius:10px; }
+    }
+
+    /* ─── MOBILE ─── medium tablets ──────────── */
+    @media (max-width:768px) and (min-width:581px) {
+      .top-bar        { padding:.9rem 1.3rem; }
+      .top-bar-left h1 { font-size:1.25rem; }
+      .slide          { padding:1.4rem 1rem 7rem; }
+      .client-column  { max-width:100%; }
+      .hm-clients-grid { grid-template-columns:repeat(3,1fr); }
+      .lock-card      { max-width:400px; }
+      .timer-card     { flex-wrap:wrap; }
+      #savePrompt     { max-width:85vw; }
     }
 
     /* ─── ADMIN LOCK SCREEN ──────────────────── */
