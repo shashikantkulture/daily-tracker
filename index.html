@@ -78,6 +78,46 @@
     .sync-btn:active { transform:scale(.95); }
     .sync-btn.syncing { animation:syncPulse .8s ease infinite; }
     @keyframes syncPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    /* dot on button when unsaved */
+    .sync-btn.has-changes { border-color:rgba(220,38,38,.7); background:rgba(220,38,38,.18); animation:syncPulse 1.4s ease infinite; }
+
+    /* ─── SAVE-NOW POPUP ─────────────────────── */
+    #savePrompt {
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(30px);
+      background:linear-gradient(135deg,#1a0808,#200d0d);
+      border:1px solid var(--border-red);
+      border-radius:18px; padding:1.1rem 1.6rem;
+      display:flex; align-items:center; gap:1.1rem;
+      box-shadow:0 0 40px rgba(220,38,38,.25), 0 12px 40px rgba(0,0,0,.6);
+      z-index:500; opacity:0; pointer-events:none;
+      transition:all .4s cubic-bezier(.16,1,.3,1);
+      white-space:nowrap;
+    }
+    #savePrompt::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,transparent,var(--red),transparent);
+      border-radius:18px 18px 0 0;
+    }
+    #savePrompt.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+    .sp-dot { width:8px; height:8px; border-radius:50%; background:var(--red-soft); flex-shrink:0; animation:spDotPulse 1.2s ease infinite; }
+    @keyframes spDotPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.6} }
+    .sp-text { font-size:.88rem; font-weight:600; color:var(--white); }
+    .sp-text span { color:var(--muted); font-weight:400; font-size:.8rem; }
+    .sp-btns { display:flex; gap:.55rem; margin-left:.3rem; }
+    .sp-save {
+      padding:.45rem 1.1rem; background:linear-gradient(135deg,var(--red),#b91c1c);
+      border:none; border-radius:9px; color:#fff; font-weight:700;
+      font-size:.8rem; cursor:pointer; transition:all .2s;
+      box-shadow:0 4px 12px rgba(220,38,38,.3);
+    }
+    .sp-save:hover { background:linear-gradient(135deg,var(--red-soft),var(--red)); transform:translateY(-1px); }
+    .sp-save:active { transform:scale(.95); }
+    .sp-dismiss {
+      padding:.45rem .85rem; background:rgba(255,255,255,.06);
+      border:1px solid var(--border); border-radius:9px; color:var(--muted);
+      font-weight:600; font-size:.8rem; cursor:pointer; transition:all .2s;
+    }
+    .sp-dismiss:hover { background:rgba(255,255,255,.1); color:var(--white); }
 
     /* ─── TOAST ──────────────────────────────── */
     .toast {
@@ -478,12 +518,22 @@
       <div class="slide-counter">
         <span id="currentSlideNum">1</span> / <span id="totalSlides">7</span>
       </div>
-      <button class="sync-btn" id="syncBtn" onclick="exportAndSync()" title="Bake edits into file & auto-push to GitHub">💾 Save & Sync</button>
+      <button class="sync-btn" id="syncBtn" onclick="exportAndSync()" title="Bake current edits into file & auto-push to GitHub">🔄 Update</button>
     </div>
   </header>
 
   <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast"></div>
+
+  <!-- SAVE NOW POPUP -->
+  <div id="savePrompt">
+    <div class="sp-dot"></div>
+    <div class="sp-text">Unsaved changes detected <span>— click to save</span></div>
+    <div class="sp-btns">
+      <button class="sp-save" onclick="exportAndSync()">💾 Save Now</button>
+      <button class="sp-dismiss" onclick="dismissSavePrompt()">✕</button>
+    </div>
+  </div>
 
   <!-- QUOTE -->
   <div class="quote-bar" id="quoteBar">Loading...</div>
@@ -573,6 +623,7 @@ let activeBacklog = 0;  // which client tab is open in backlog
 ═══════════════════════════════════════════ */
 function save() {
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  showSavePrompt();
 }
 function load() {
   try {
@@ -1006,6 +1057,27 @@ function resetApp() {
 }
 
 /* ═══════════════════════════════════════════
+   SAVE PROMPT
+═══════════════════════════════════════════ */
+let savePromptTimer = null;
+function showSavePrompt() {
+  const prompt = document.getElementById('savePrompt');
+  const btn    = document.getElementById('syncBtn');
+  if (prompt) prompt.classList.add('show');
+  if (btn)    btn.classList.add('has-changes');
+  // Auto-hide after 12s if user ignores it
+  clearTimeout(savePromptTimer);
+  savePromptTimer = setTimeout(dismissSavePrompt, 12000);
+}
+function dismissSavePrompt() {
+  const prompt = document.getElementById('savePrompt');
+  const btn    = document.getElementById('syncBtn');
+  if (prompt) prompt.classList.remove('show');
+  if (btn)    btn.classList.remove('has-changes');
+  clearTimeout(savePromptTimer);
+}
+
+/* ═══════════════════════════════════════════
    TOAST HELPER
 ═══════════════════════════════════════════ */
 let toastTimer = null;
@@ -1053,9 +1125,9 @@ function exportAndSync() {
 
     btn.classList.remove('syncing');
     btn.textContent = '✅ Saved!';
+    dismissSavePrompt();
     showToast('✅ index.html downloaded! Replace the file → auto-push will trigger.', 'success', 5000);
-
-    setTimeout(() => { btn.textContent = '💾 Save & Sync'; }, 3000);
+    setTimeout(() => { btn.textContent = '🔄 Update'; }, 3000);
   } catch(err) {
     btn.classList.remove('syncing');
     btn.textContent = '💾 Save & Sync';
