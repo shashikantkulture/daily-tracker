@@ -227,15 +227,49 @@
         @media (max-width: 600px) {
             .top-bar { padding: 1rem; }
             .top-bar-left h1 { font-size: 1.1rem; }
-            .sync-btn { padding: 0.5rem 1rem; font-size: 0.75rem; }
+            .top-bar-right { gap: 0.5rem; }
+            .yt-btn { display: none; } /* Hide YT on very small screens to save space, or keep? User asked for it. Let's keep. */
+            .top-bar-right .yt-btn { display: flex; width: 32px; height: 32px; font-size: 0.9rem; }
+            .sync-btn { padding: 0.5rem 0.8rem; font-size: 0.7rem; }
             .slide { padding: 1rem 0.8rem; }
             .client-column { gap: 0.8rem; }
             .client-header-card { padding: 1rem; border-radius: 16px; }
             .client-name-editable { font-size: 1.25rem; }
             .timer-digits { font-size: 1.8rem; }
-            .bottom-nav { padding: 0.7rem; }
-            .nav-btn { padding: 0.5rem 0.9rem; font-size: 0.8rem; }
-            .side-toggle-floater { height: 80px; width: 28px; font-size: 0.65rem; }
+            .bottom-nav { padding: 0.8rem; display: flex !important; } /* Ensure visibility */
+            .nav-btn { padding: 0.6rem 0.8rem; font-size: 0.75rem; min-width: 80px; }
+            .nav-btn.primary { background: var(--red); color: white; }
+            .dot-indicators { gap: 0.3rem; }
+            .dot { width: 6px; height: 6px; }
+            .dot.active { width: 18px; }
+            .side-toggle-floater { height: 70px; width: 26px; font-size: 0.6rem; border-radius: 10px 0 0 10px; }
+        }
+
+        /* ─── ANIMATIONS ─────────────────────────── */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .side-toggle-floater { animation: pulse-glow 2s infinite; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .client-header-card { animation: float 4s ease-in-out infinite; }
+        .client-header-card.done-card { animation-play-state: paused; }
+
+        @keyframes subtle-bg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .sync-btn.has-changes {
+            background: linear-gradient(-45deg, #dc2626, #991b1b, #ef4444, #dc2626);
+            background-size: 400% 400%;
+            animation: subtle-bg 3s ease infinite;
         }
     </style>
 </head>
@@ -262,6 +296,7 @@
                 <div class="slide-counter"><span id="currSlide">1</span>/<span id="totalSlide">7</span></div>
                 <button class="sync-btn" onclick="exportAndSync()">🔄 Update</button>
                 <button class="cal-btn" onclick="openHistory()" title="History">📅</button>
+                <button class="yt-btn" onclick="window.open('https://music.youtube.com','_blank')" title="YouTube Music">▶</button>
             </div>
         </header>
 
@@ -381,6 +416,8 @@
 
         function save() {
             localStorage.setItem(STORE_KEY, JSON.stringify(state));
+            const syncBtn = document.querySelector('.sync-btn');
+            if (syncBtn) syncBtn.classList.add('has-changes');
             saveHistory();
         }
 
@@ -639,15 +676,19 @@
         }
 
         function exportAndSync() {
-            const btn = event.target;
+            const btn = document.querySelector('.sync-btn');
             btn.textContent = 'Saving...';
+            btn.classList.add('syncing');
+            
             setTimeout(() => {
                 let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
                 const blob = new Blob([html], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url; a.download = 'index.html'; a.click();
+                
                 btn.textContent = '🔄 Update';
+                btn.classList.remove('has-changes', 'syncing');
                 showToast('✅ Saved! Push to GitHub now.');
             }, 500);
         }
