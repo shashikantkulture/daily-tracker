@@ -45,6 +45,10 @@
 
     /* ─── LAYOUT ─────────────────────────────── */
     #app { position:relative; z-index:1; height:100vh; display:flex; flex-direction:column; }
+    /* Blur when admin lock is active */
+    body.is-locked #app { filter:blur(18px) brightness(.35); pointer-events:none; user-select:none; }
+    body.is-locked #backlogTrigger { filter:blur(18px); pointer-events:none; }
+    body.is-locked #backlogPanel  { filter:blur(18px); pointer-events:none; }
 
     /* ─── TOP BAR ────────────────────────────── */
     .top-bar {
@@ -528,6 +532,132 @@
     }
 
     /* ─── ADMIN LOCK SCREEN ──────────────────── */
+    /* ─── CALENDAR BUTTON ──────────────────────── */
+    .cal-btn {
+      width:34px; height:34px; border-radius:9px;
+      background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--red-soft); font-size:1.05rem; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .2s; position:relative;
+      animation:calGlow 2.5s ease-in-out infinite;
+    }
+    @keyframes calGlow {
+      0%,100%{ box-shadow:0 0 0 0 rgba(220,38,38,0); }
+      50%    { box-shadow:0 0 0 6px rgba(220,38,38,.25); }
+    }
+    .cal-btn:hover { background:rgba(220,38,38,.15); border-color:var(--border-red); transform:scale(1.08); }
+
+    /* ─── YT MUSIC BUTTON ─────────────────────── */
+    .yt-btn {
+      width:34px; height:34px; border-radius:9px;
+      background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:#ff0000; font-size:1.05rem; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .2s;
+    }
+    .yt-btn:hover { background:rgba(255,0,0,.12); border-color:rgba(255,0,0,.35); transform:scale(1.08); }
+
+    /* ─── HISTORY MODAL ──────────────────────── */
+    #historyModal {
+      position:fixed; inset:0; z-index:800;
+      background:rgba(0,0,0,.92); backdrop-filter:blur(14px);
+      display:none; flex-direction:column;
+      animation:fadeIn .3s ease;
+    }
+    #historyModal.open { display:flex; }
+    .hm-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.2rem 2rem; border-bottom:1px solid var(--border);
+      background:rgba(10,10,10,.88); backdrop-filter:blur(16px);
+      flex-shrink:0;
+    }
+    .hm-title {
+      font-size:1.2rem; font-weight:800; letter-spacing:-.03em;
+      background:linear-gradient(135deg,#fff,#fca5a5);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .hm-close {
+      width:30px; height:30px; border-radius:50%; border:1px solid var(--border);
+      background:rgba(255,255,255,.05); color:var(--muted); cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:.85rem; transition:all .18s;
+    }
+    .hm-close:hover { background:rgba(220,38,38,.2); color:var(--red-soft); border-color:var(--border-red); }
+    .hm-body { flex:1; overflow-y:auto; padding:1.5rem 2rem; }
+    .hm-body::-webkit-scrollbar { width:4px; }
+    .hm-body::-webkit-scrollbar-thumb { background:var(--red-dim); border-radius:99px; }
+    .hm-day {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:14px; margin-bottom:.9rem; overflow:hidden;
+      transition:transform .2s;
+    }
+    .hm-day:hover { transform:translateX(4px); }
+    .hm-day-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.85rem 1.2rem; cursor:pointer;
+      border-bottom:1px solid var(--border);
+    }
+    .hm-date { font-weight:700; font-size:.9rem; }
+    .hm-day-pills { display:flex; gap:.5rem; align-items:center; }
+    .hm-overall-pill {
+      font-size:.72rem; font-weight:700; padding:.22rem .7rem;
+      border-radius:999px; border:1px solid var(--border-red);
+      background:rgba(220,38,38,.08); color:var(--red-soft);
+    }
+    .hm-overall-pill.full { border-color:var(--border-grn); background:rgba(22,163,74,.1); color:var(--green-soft); }
+    .hm-clients-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+      gap:.6rem; padding:.9rem 1.2rem;
+    }
+    .hm-client-cell {
+      background:rgba(255,255,255,.04); border-radius:10px;
+      padding:.55rem .85rem; border:1px solid var(--border);
+    }
+    .hm-client-name { font-size:.68rem; font-weight:700; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom:.25rem; }
+    .hm-client-score { font-size:1.1rem; font-weight:800; color:var(--white); }
+    .hm-client-score.green { color:var(--green-soft); }
+    .hm-client-score.red   { color:var(--red-soft);   }
+    .hm-empty { text-align:center; padding:3rem; color:var(--muted); font-size:.9rem; }
+
+    /* ─── BACKLOG STATS POPUP ───────────────────── */
+    #backlogStats {
+      position:fixed; bottom:140px; right:1.5rem; z-index:400;
+      background:linear-gradient(135deg,#1a0808,#200d0d);
+      border:1px solid var(--border-red); border-radius:16px;
+      padding:.9rem 1.2rem; max-width:300px; width:90%;
+      box-shadow:0 0 30px rgba(220,38,38,.2), 0 12px 40px rgba(0,0,0,.5);
+      display:none; flex-direction:column; gap:.5rem;
+      animation:floatIn .4s cubic-bezier(.16,1,.3,1) both;
+    }
+    #backlogStats.show { display:flex; }
+    .bs-header { display:flex; align-items:center; justify-content:space-between; }
+    .bs-title { font-size:.82rem; font-weight:800; color:var(--red-soft); }
+    .bs-close { cursor:pointer; color:var(--muted); font-size:.8rem; transition:color .2s; }
+    .bs-close:hover { color:var(--white); }
+    .bs-total { font-size:1.8rem; font-weight:900; color:var(--red-soft); letter-spacing:-.04em; }
+    .bs-label { font-size:.7rem; color:var(--muted); margin-top:-.4rem; }
+    .bs-days { display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.3rem; }
+    .bs-day-chip {
+      font-size:.68rem; font-weight:700; padding:.2rem .55rem;
+      border-radius:6px; background:rgba(220,38,38,.1);
+      border:1px solid rgba(220,38,38,.2); color:var(--red-soft);
+    }
+    .bs-day-chip.zero { background:rgba(22,163,74,.08); border-color:var(--border-grn); color:var(--green-soft); }
+    #backlogStatsTrigger {
+      position:fixed; bottom:140px; right:1.5rem; z-index:401;
+      padding:.5rem 1rem; background:linear-gradient(135deg,#7f1d1d,#991b1b);
+      border:none; border-radius:999px; color:#fff;
+      font-size:.76rem; font-weight:700; cursor:pointer;
+      box-shadow:0 4px 16px rgba(220,38,38,.3);
+      display:flex; align-items:center; gap:.4rem;
+      animation:statsPulse 2.8s ease-in-out infinite;
+      white-space:nowrap;
+    }
+    @keyframes statsPulse {
+      0%,100%{ box-shadow:0 4px 16px rgba(220,38,38,.25); }
+      50%    { box-shadow:0 4px 24px rgba(220,38,38,.55); }
+    }
+    #backlogStatsTrigger:hover { background:linear-gradient(135deg,#991b1b,#b91c1c); }
+
     #adminLock {
       position:fixed; inset:0; z-index:9999;
       background:var(--bg); display:flex; align-items:center; justify-content:center;
@@ -619,6 +749,8 @@
         <span id="currentSlideNum">1</span> / <span id="totalSlides">7</span>
       </div>
       <button class="sync-btn" id="syncBtn" onclick="exportAndSync()" title="Bake current edits into file & auto-push to GitHub">🔄 Update</button>
+      <button class="cal-btn" onclick="openHistory()" title="30-Day Work History">📅</button>
+      <button class="yt-btn" onclick="window.open('https://music.youtube.com','_blank')" title="Open YouTube Music">▶</button>
     </div>
   </header>
 
@@ -665,6 +797,29 @@
   <div class="bp-tabs" id="bpTabs"></div>
   <!-- Note blocks per client -->
   <div class="bp-blocks" id="bpBlocks"></div>
+</div>
+
+<!-- 30-DAY HISTORY MODAL -->
+<div id="historyModal">
+  <div class="hm-header">
+    <span class="hm-title">📅 30-Day Work History</span>
+    <button class="hm-close" onclick="closeHistory()">✕</button>
+  </div>
+  <div class="hm-body" id="historyBody">
+    <div class="hm-empty">Loading history...</div>
+  </div>
+</div>
+
+<!-- BACKLOG STATS POPUP -->
+<button id="backlogStatsTrigger" onclick="toggleBacklogStats()">⚠️ Backlog Pending</button>
+<div id="backlogStats">
+  <div class="bs-header">
+    <span class="bs-title">⚠️ 30-Day Backlog</span>
+    <span class="bs-close" onclick="document.getElementById('backlogStats').classList.remove('show')">✕</span>
+  </div>
+  <div class="bs-total" id="bsTotalNum">0</div>
+  <div class="bs-label">total incomplete tasks across 30 days</div>
+  <div class="bs-days" id="bsDaysChips"></div>
 </div>
 
 <!-- COMPLETION POPUP -->
@@ -724,6 +879,8 @@ let activeBacklog = 0;    // which client tab is open in backlog
 function save() {
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
   showSavePrompt();
+  // Auto-record to 30-day history on every change
+  try { saveHistory(); } catch(e) {}
 }
 function load() {
   try {
@@ -1263,17 +1420,37 @@ function exportAndSync() {
 }
 
 /* ═══════════════════════════════════════════
-   ADMIN LOCK
+   ADMIN LOCK  (XOR-obfuscated + SHA-256)
+   Password is never stored in plaintext.
+   Encoded using XOR key 0x3e, split across vars.
+   SHA-256 comparison for verification.
 ═══════════════════════════════════════════ */
-const ADMIN_PASS     = 'shashi@admin2024';
-const ADMIN_SESS_KEY = 'admin_auth';
+const _SESS = 'admin_auth';
+// XOR-encoded password bytes (key: 0x3e)
+const _P1=[0x57,0x58,0x4B,0x5D],
+      _P2=[0x55,0x57,0x50,0x59],
+      _P3=[0x56,0x5F,0x4A,0x5B],
+      _P4=[0x47,0x51,0x4B,0x4C],
+      _P5=[0x49,0x51,0x4C,0x55];
+const _XK = 0x3e;
 
-function checkAdminPass() {
+async function _h256(s) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function _decoded() {
+  return [..._P1,..._P2,..._P3,..._P4,..._P5].map(c=>String.fromCharCode(c^_XK)).join('');
+}
+
+async function checkAdminPass() {
   const val = document.getElementById('adminPassInput').value;
-  if (val === ADMIN_PASS) {
-    sessionStorage.setItem(ADMIN_SESS_KEY, '1');
+  const [ih, ph] = await Promise.all([_h256(val), _h256(_decoded())]);
+  if (ih === ph) {
+    sessionStorage.setItem(_SESS, '1');
     document.getElementById('adminLock').style.display = 'none';
     document.getElementById('adminPassInput').value = '';
+    document.body.classList.remove('is-locked');
     init();
   } else {
     const err = document.getElementById('lockError');
@@ -1284,14 +1461,119 @@ function checkAdminPass() {
   }
 }
 
+/* ═══════════════════════════════════════════
+   30-DAY HISTORY
+═══════════════════════════════════════════ */
+const HIST_KEY = 'shashi_history_v1';
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function saveHistory() {
+  const key = todayKey();
+  let hist = {};
+  try { hist = JSON.parse(localStorage.getItem(HIST_KEY)) || {}; } catch(e) {}
+  const dayData = { clients:{}, ts: Date.now() };
+  let totalDone=0, totalAll=0;
+  state.clients.forEach(c => {
+    const chk = state.checked[c.id] || [];
+    const done = chk.filter(Boolean).length;
+    const all  = c.tasks.length;
+    dayData.clients[c.id] = { name:c.name, done, total:all };
+    totalDone += done; totalAll += all;
+  });
+  dayData.overallDone  = totalDone;
+  dayData.overallTotal = totalAll;
+  dayData.backlog      = totalAll - totalDone;
+  hist[key] = dayData;
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+}
+
+function getLast30Days() {
+  let hist = {};
+  try { hist = JSON.parse(localStorage.getItem(HIST_KEY)) || {}; } catch(e) {}
+  const days = [];
+  for (let i=0;i<30;i++) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (hist[k]) days.push({ key:k, ...hist[k] });
+  }
+  return days;
+}
+
+function openHistory() {
+  saveHistory(); // snapshot current state
+  renderHistory();
+  document.getElementById('historyModal').classList.add('open');
+}
+function closeHistory() {
+  document.getElementById('historyModal').classList.remove('open');
+}
+
+function renderHistory() {
+  const days = getLast30Days();
+  const body = document.getElementById('historyBody');
+  if (!days.length) {
+    body.innerHTML = `<div class="hm-empty">📭 No history yet. Data records automatically each day you use the app.</div>`;
+    return;
+  }
+  body.innerHTML = days.map(day => {
+    const d   = new Date(day.key);
+    const lbl = d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    const pct = day.overallTotal > 0 ? Math.round(day.overallDone/day.overallTotal*100) : 0;
+    const full = pct === 100;
+    const clientCells = state.clients.map(c => {
+      const cd = day.clients?.[c.id];
+      if (!cd) return '';
+      const cls = cd.done===cd.total ? 'green' : cd.done===0 ? 'red' : '';
+      return `<div class="hm-client-cell">
+        <div class="hm-client-name">${cd.name||c.name}</div>
+        <div class="hm-client-score ${cls}">${cd.done}/${cd.total}</div>
+      </div>`;
+    }).join('');
+    return `
+      <div class="hm-day">
+        <div class="hm-day-header">
+          <span class="hm-date">${lbl}</span>
+          <div class="hm-day-pills">
+            <span class="hm-overall-pill ${full?'full':''}">${pct}% &nbsp;(${day.overallDone}/${day.overallTotal})</span>
+          </div>
+        </div>
+        <div class="hm-clients-grid">${clientCells}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   BACKLOG STATS
+═══════════════════════════════════════════ */
+function toggleBacklogStats() {
+  const el = document.getElementById('backlogStats');
+  if (el.classList.contains('show')) { el.classList.remove('show'); return; }
+  // Compute
+  const days = getLast30Days();
+  let total = 0;
+  const chips = days.slice(0,30).map(d => {
+    const n = d.backlog || 0;
+    total += n;
+    const short = new Date(d.key).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    return `<span class="bs-day-chip ${n===0?'zero':''}" title="${short}">${short}: ${n}</span>`;
+  }).join('');
+  document.getElementById('bsTotalNum').textContent = total;
+  document.getElementById('bsDaysChips').innerHTML  = chips || '<span style="color:var(--muted);font-size:.75rem">No data yet</span>';
+  el.classList.add('show');
+}
+
 /* BOOT */
 window.onload = () => {
-  // Check admin session
-  if (sessionStorage.getItem(ADMIN_SESS_KEY) === '1') {
+  document.body.classList.add('is-locked'); // blur app
+  if (sessionStorage.getItem(_SESS) === '1') {
     document.getElementById('adminLock').style.display = 'none';
+    document.body.classList.remove('is-locked');
     init();
   } else {
-    // Show lock, focus input
     setTimeout(() => document.getElementById('adminPassInput').focus(), 300);
   }
 };
