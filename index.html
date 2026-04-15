@@ -65,6 +65,36 @@
     .slide-counter { font-size:.85rem; font-weight:700; color:var(--muted); letter-spacing:.05em; }
     .slide-counter span { color:var(--red-soft); }
 
+    /* ─── SYNC BUTTON ────────────────────────── */
+    .sync-btn {
+      display:flex; align-items:center; gap:.4rem;
+      padding:.45rem 1rem; border-radius:9px;
+      border:1px solid rgba(220,38,38,0.4);
+      background:rgba(220,38,38,0.1); color:var(--red-soft);
+      font-weight:700; font-size:.78rem; cursor:pointer;
+      transition:all .2s; letter-spacing:.03em; white-space:nowrap;
+    }
+    .sync-btn:hover { background:rgba(220,38,38,0.2); transform:translateY(-1px); box-shadow:0 4px 14px rgba(220,38,38,0.2); }
+    .sync-btn:active { transform:scale(.95); }
+    .sync-btn.syncing { animation:syncPulse .8s ease infinite; }
+    @keyframes syncPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    /* ─── TOAST ──────────────────────────────── */
+    .toast {
+      position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px);
+      background:#1a1a1a; border:1px solid var(--border);
+      border-radius:12px; padding:.7rem 1.4rem;
+      font-size:.85rem; font-weight:600; color:var(--white);
+      z-index:9999; opacity:0; pointer-events:none;
+      transition:all .35s cubic-bezier(.16,1,.3,1);
+      display:flex; align-items:center; gap:.5rem;
+      box-shadow:0 8px 30px rgba(0,0,0,.5);
+      white-space:nowrap;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.success { border-color:var(--border-grn); }
+    .toast.error   { border-color:var(--border-red); }
+
     /* ─── QUOTE ──────────────────────────────── */
     .quote-bar {
       flex-shrink:0; text-align:center; padding:.5rem 2rem;
@@ -448,8 +478,12 @@
       <div class="slide-counter">
         <span id="currentSlideNum">1</span> / <span id="totalSlides">7</span>
       </div>
+      <button class="sync-btn" id="syncBtn" onclick="exportAndSync()" title="Bake edits into file & auto-push to GitHub">💾 Save & Sync</button>
     </div>
   </header>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast"></div>
 
   <!-- QUOTE -->
   <div class="quote-bar" id="quoteBar">Loading...</div>
@@ -969,6 +1003,64 @@ function resetApp() {
   closeBacklog();
   currentSlide = 0;
   init();
+}
+
+/* ═══════════════════════════════════════════
+   TOAST HELPER
+═══════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg, type='success', duration=3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+/* ═══════════════════════════════════════════
+   EXPORT & SYNC
+   Bakes current client/task edits into
+   index.html and downloads it. The file
+   watcher (auto-push.ps1) detects the
+   change and pushes to GitHub automatically.
+═══════════════════════════════════════════ */
+function exportAndSync() {
+  const btn = document.getElementById('syncBtn');
+  btn.classList.add('syncing');
+  btn.textContent = '⏳ Saving...';
+
+  try {
+    // Get the full page HTML source
+    let html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+    // Replace DEFAULT_CLIENTS array with current edited client list
+    const updatedClients = JSON.stringify(state.clients, null, 2);
+    html = html.replace(
+      /const DEFAULT_CLIENTS = \[[\s\S]*?\];/,
+      `const DEFAULT_CLIENTS = ${updatedClients};`
+    );
+
+    // Create downloadable blob
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    btn.classList.remove('syncing');
+    btn.textContent = '✅ Saved!';
+    showToast('✅ index.html downloaded! Replace the file → auto-push will trigger.', 'success', 5000);
+
+    setTimeout(() => { btn.textContent = '💾 Save & Sync'; }, 3000);
+  } catch(err) {
+    btn.classList.remove('syncing');
+    btn.textContent = '💾 Save & Sync';
+    showToast('❌ Export failed: ' + err.message, 'error');
+  }
 }
 
 /* BOOT */
