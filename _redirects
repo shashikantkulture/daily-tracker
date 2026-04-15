@@ -1,0 +1,6 @@
+# Netlify Redirects — Daily Tracker
+# Admin page:  yourdomain.com/        → index.html (protected)
+# Client page: yourdomain.com/client  → client.html (login required)
+
+/client   /client.html   200
+/client/  /client.html   200

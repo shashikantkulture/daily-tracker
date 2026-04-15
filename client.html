@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Client Portal — Task Dashboard</title>
+  <meta name="description" content="Client task portal — view and manage your assigned tasks."/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    /* ─── TOKENS (Navy Blue theme — distinct from admin red) ── */
+    :root {
+      --bg:         #080d15;
+      --surface:    #0d1626;
+      --card:       #111e33;
+      --card2:      #162340;
+      --blue:       #2563eb;
+      --blue-soft:  #3b82f6;
+      --blue-dim:   rgba(37,99,235,0.18);
+      --blue-glow:  rgba(37,99,235,0.35);
+      --accent:     #06b6d4;
+      --white:      #f0f6ff;
+      --muted:      #64748b;
+      --muted2:     #1e3a5f;
+      --green:      #16a34a;
+      --green-soft: #22c55e;
+      --border:     rgba(255,255,255,0.07);
+      --border-bl:  rgba(37,99,235,0.4);
+      --border-grn: rgba(34,197,94,0.35);
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body {
+      height: 100%; font-family:'Inter',sans-serif;
+      background:var(--bg); color:var(--white); overflow-x:hidden;
+    }
+
+    /* ─── ANIMATED BG ─────────────────────────────────── */
+    body::before {
+      content:''; position:fixed; inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size:50px 50px; z-index:0; pointer-events:none;
+    }
+    body::after {
+      content:''; position:fixed; top:-150px; left:50%;
+      transform:translateX(-50%); width:900px; height:600px;
+      background:radial-gradient(ellipse,rgba(37,99,235,0.1) 0%,transparent 70%);
+      z-index:0; pointer-events:none; animation:bgPulse 5s ease infinite alternate;
+    }
+    @keyframes bgPulse { from{opacity:.4} to{opacity:1} }
+
+    /* ─── LOGIN SCREEN ────────────────────────────────── */
+    #loginScreen {
+      position:fixed; inset:0; z-index:100;
+      display:flex; align-items:center; justify-content:center;
+      padding:1.5rem;
+    }
+    .login-card {
+      background:linear-gradient(160deg, #0d1f3c, #0a1828);
+      border:1px solid var(--border-bl); border-radius:28px;
+      padding:3rem 2.5rem 2.5rem; width:100%; max-width:420px;
+      position:relative; overflow:hidden; z-index:1;
+      box-shadow:0 0 80px rgba(37,99,235,0.15), 0 30px 60px rgba(0,0,0,0.6);
+      animation:loginIn .6s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes loginIn { from{opacity:0;transform:translateY(30px) scale(.97)} to{opacity:1;transform:none} }
+    .login-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg, transparent, var(--blue-soft), var(--accent), transparent);
+    }
+    .login-logo {
+      text-align:center; margin-bottom:2rem;
+    }
+    .login-logo .icon {
+      font-size:2.8rem; display:block; margin-bottom:.7rem;
+      animation:iconFloat 3s ease-in-out infinite;
+    }
+    @keyframes iconFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    .login-logo h1 {
+      font-size:1.6rem; font-weight:800; letter-spacing:-.04em;
+      background:linear-gradient(135deg,#fff 40%,var(--accent));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      margin-bottom:.3rem;
+    }
+    .login-logo p { font-size:.82rem; color:var(--muted); }
+
+    .form-group { margin-bottom:1.1rem; }
+    .form-group label {
+      display:block; font-size:.75rem; font-weight:700;
+      color:var(--muted); letter-spacing:.08em; text-transform:uppercase;
+      margin-bottom:.45rem;
+    }
+    .form-input {
+      width:100%; padding:.8rem 1.1rem;
+      background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+      border-radius:12px; color:var(--white); font-family:'Inter',sans-serif;
+      font-size:.95rem; outline:none; transition:all .2s;
+    }
+    .form-input::placeholder { color:var(--muted2); }
+    .form-input:focus { border-color:var(--border-bl); background:rgba(37,99,235,.05); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+
+    .login-btn {
+      width:100%; padding:.9rem; margin-top:.6rem;
+      background:linear-gradient(135deg, var(--blue), #1d4ed8);
+      border:none; border-radius:12px; color:#fff; font-family:'Inter',sans-serif;
+      font-weight:800; font-size:1rem; cursor:pointer; transition:all .22s;
+      box-shadow:0 6px 20px rgba(37,99,235,.35); letter-spacing:.02em;
+    }
+    .login-btn:hover { background:linear-gradient(135deg, var(--blue-soft), var(--blue)); transform:translateY(-2px); box-shadow:0 10px 28px rgba(37,99,235,.45); }
+    .login-btn:active { transform:scale(.97); }
+
+    .login-error {
+      background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.35);
+      border-radius:10px; padding:.6rem 1rem; font-size:.82rem;
+      color:#fca5a5; margin-top:.8rem; display:none; text-align:center;
+    }
+    .login-error.show { display:block; animation:shake .35s ease; }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}
+    }
+    .login-footer { text-align:center; margin-top:1.5rem; font-size:.75rem; color:var(--muted); }
+
+    /* ─── MAIN APP (hidden until login) ──────────────── */
+    #app { display:none; min-height:100vh; flex-direction:column; position:relative; z-index:1; }
+    #app.visible { display:flex; }
+
+    /* TOP BAR */
+    .top-bar {
+      flex-shrink:0; padding:1.1rem 2rem .9rem;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid var(--border);
+      background:rgba(8,13,21,0.9); backdrop-filter:blur(16px);
+      position:sticky; top:0; z-index:50;
+    }
+    .top-bar-left { display:flex; align-items:center; gap:.9rem; }
+    .client-avatar {
+      width:38px; height:38px; border-radius:50%;
+      background:linear-gradient(135deg, var(--blue), var(--accent));
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:.9rem; flex-shrink:0;
+      box-shadow:0 0 16px rgba(37,99,235,.4);
+    }
+    .top-bar-left h1 { font-size:1.15rem; font-weight:700; letter-spacing:-.03em; }
+    .top-bar-left p  { font-size:.75rem; color:var(--muted); margin-top:.1rem; }
+    .logout-btn {
+      padding:.45rem 1rem; background:rgba(255,255,255,.05);
+      border:1px solid var(--border); border-radius:9px; color:var(--muted);
+      font-size:.8rem; font-weight:600; cursor:pointer; transition:all .2s;
+    }
+    .logout-btn:hover { background:rgba(239,68,68,.1); color:#fca5a5; border-color:rgba(239,68,68,.3); }
+
+    /* CONTENT */
+    .content {
+      flex:1; padding:2rem 1.5rem 4rem;
+      max-width:680px; width:100%; margin:0 auto;
+    }
+
+    /* SECTION HEADING */
+    .section-title {
+      font-size:.7rem; font-weight:700; color:var(--muted);
+      letter-spacing:.12em; text-transform:uppercase;
+      margin-bottom:1rem; display:flex; align-items:center; gap:.6rem;
+    }
+    .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* PROGRESS HEADER */
+    .progress-header {
+      background:linear-gradient(135deg,#0d1f3c,#112240);
+      border:1px solid var(--border-bl); border-radius:20px;
+      padding:1.6rem 2rem 1.4rem; margin-bottom:1.5rem; position:relative; overflow:hidden;
+      box-shadow:0 0 40px rgba(37,99,235,.08), 0 8px 32px rgba(0,0,0,.4);
+    }
+    .progress-header::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg, transparent, var(--blue-soft), transparent);
+    }
+    .ph-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:.9rem; }
+    .ph-title { font-size:1.5rem; font-weight:800; letter-spacing:-.04em;
+      background:linear-gradient(135deg,#fff,#93c5fd);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .ph-pill {
+      font-size:.78rem; font-weight:700; padding:.28rem .8rem; border-radius:999px;
+      border:1px solid var(--border-bl); background:var(--blue-dim); color:var(--blue-soft);
+    }
+    .ph-pill.done { border-color:var(--border-grn); background:rgba(22,163,74,.1); color:var(--green-soft); }
+    .prog-bar-wrap { height:4px; background:rgba(255,255,255,.06); border-radius:99px; overflow:hidden; }
+    .prog-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--blue),var(--accent)); transition:width .5s cubic-bezier(.4,0,.2,1); }
+    .done-prog .prog-bar-fill { background:linear-gradient(90deg,var(--green),var(--green-soft)); }
+
+    /* TASK CARDS */
+    .tasks-list { display:flex; flex-direction:column; gap:.7rem; margin-bottom:1.5rem; }
+    .task-item {
+      display:flex; align-items:center; gap:1rem;
+      padding:1.05rem 1.3rem;
+      background:var(--card); border:1px solid var(--border); border-radius:14px;
+      cursor:pointer; transition:all .22s; user-select:none;
+      box-shadow:0 2px 12px rgba(0,0,0,.3);
+    }
+    .task-item:hover { border-color:rgba(37,99,235,.35); transform:translateX(4px) translateY(-1px); box-shadow:0 6px 20px rgba(0,0,0,.4); }
+    .task-item.done { border-color:var(--border-grn); background:rgba(22,163,74,.04); }
+    .task-item:active { transform:scale(.98); }
+    .task-checkbox {
+      width:22px; height:22px; border-radius:50%;
+      border:2px solid #1e3a5f; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:.75rem; transition:all .22s;
+    }
+    .task-item.done .task-checkbox { background:var(--green); border-color:var(--green); color:#fff; }
+    .task-label { flex:1; font-size:.98rem; font-weight:500; transition:all .22s; }
+    .task-item.done .task-label { color:var(--muted); text-decoration:line-through; }
+    .task-tag {
+      font-size:.68rem; font-weight:700; padding:.2rem .55rem;
+      border-radius:6px; background:rgba(37,99,235,.1);
+      border:1px solid rgba(37,99,235,.2); color:var(--blue-soft);
+      flex-shrink:0; letter-spacing:.03em;
+    }
+    .task-item.done .task-tag { background:rgba(22,163,74,.08); border-color:var(--border-grn); color:var(--green-soft); }
+
+    /* ADD TASK */
+    .add-section {
+      background:var(--card); border:1px solid var(--border); border-radius:16px;
+      padding:1.3rem 1.5rem; box-shadow:0 4px 20px rgba(0,0,0,.2);
+      margin-bottom:1.5rem;
+    }
+    .add-section-title { font-size:.72rem; font-weight:700; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.8rem; }
+    .add-row { display:flex; gap:.65rem; }
+    .add-input {
+      flex:1; background:rgba(255,255,255,.04);
+      border:1px dashed rgba(255,255,255,.15); border-radius:10px;
+      color:var(--white); padding:.7rem 1rem; font-family:'Inter',sans-serif;
+      font-size:.9rem; outline:none; transition:border-color .2s;
+    }
+    .add-input::placeholder { color:#1e3a5f; }
+    .add-input:focus { border-color:var(--border-bl); background:rgba(37,99,235,.04); }
+    .add-btn {
+      padding:.7rem 1.3rem;
+      background:linear-gradient(135deg, var(--blue), #1d4ed8);
+      border:none; border-radius:10px; color:#fff; font-weight:700;
+      font-size:.85rem; cursor:pointer; flex-shrink:0; transition:all .2s;
+      box-shadow:0 4px 14px rgba(37,99,235,.28);
+    }
+    .add-btn:hover { background:linear-gradient(135deg,var(--blue-soft),var(--blue)); transform:translateY(-1px); }
+    .add-btn:active { transform:scale(.95); }
+
+    /* COMPLETION BANNER */
+    .done-banner {
+      background:linear-gradient(135deg,rgba(22,163,74,.12),rgba(6,182,212,.08));
+      border:1px solid var(--border-grn); border-radius:16px;
+      padding:1.4rem 1.6rem; text-align:center; margin-bottom:1.5rem;
+      animation:floatIn .5s ease both; display:none;
+    }
+    .done-banner.show { display:block; }
+    @keyframes floatIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+    .done-banner .big-check { font-size:2.5rem; margin-bottom:.5rem; display:block; }
+    .done-banner h3 { font-size:1.2rem; font-weight:800; color:var(--green-soft); margin-bottom:.3rem; }
+    .done-banner p  { font-size:.85rem; color:var(--muted); }
+
+    /* TOAST */
+    .toast {
+      position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px);
+      background:#111e33; border:1px solid var(--border);
+      border-radius:12px; padding:.65rem 1.3rem;
+      font-size:.82rem; font-weight:600; color:var(--white);
+      z-index:9999; opacity:0; pointer-events:none;
+      transition:all .35s cubic-bezier(.16,1,.3,1);
+      box-shadow:0 8px 30px rgba(0,0,0,.5);
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.success { border-color:var(--border-grn); }
+
+    /* FOOTER */
+    .client-footer {
+      text-align:center; padding:1.5rem; font-size:.72rem; color:var(--muted);
+      border-top:1px solid var(--border);
+    }
+
+    /* MOBILE */
+    @media (max-width:540px) {
+      .login-card { padding:2rem 1.5rem; }
+      .top-bar { padding:.9rem 1.2rem; }
+      .content { padding:1.5rem 1rem 3rem; }
+      .ph-title { font-size:1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="icon">🗂️</span>
+      <h1>Client Portal</h1>
+      <p>Sign in to view and manage your tasks</p>
+    </div>
+
+    <div class="form-group">
+      <label for="loginUser">Username</label>
+      <input class="form-input" id="loginUser" type="text" placeholder="Enter your username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label for="loginPass">Password</label>
+      <input class="form-input" id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="loginError">❌ Incorrect username or password. Please try again.</div>
+
+    <div class="login-footer">Powered by Shashikant's Work Tracker</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <div class="client-avatar" id="clientAvatar">?</div>
+      <div>
+        <h1 id="clientNameDisplay">Client</h1>
+        <p id="clientSubtitle">Your task dashboard</p>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+  </header>
+
+  <div class="content">
+
+    <!-- DONE BANNER -->
+    <div class="done-banner" id="doneBanner">
+      <span class="big-check">🎉</span>
+      <h3>All tasks completed!</h3>
+      <p>Great work today. Shashikant has been notified.</p>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-header" id="progressHeader">
+      <div class="ph-row">
+        <span class="ph-title" id="phTitle">Your Tasks</span>
+        <span class="ph-pill" id="phPill">0/0</span>
+      </div>
+      <div class="prog-bar-wrap"><div class="prog-bar-fill" id="phBar" style="width:0%"></div></div>
+    </div>
+
+    <!-- TASK LIST -->
+    <div class="section-title">Today's Tasks</div>
+    <div class="tasks-list" id="tasksList">
+      <!-- Injected by JS -->
+    </div>
+
+    <!-- ADD TASK -->
+    <div class="add-section">
+      <div class="add-section-title">Request New Task</div>
+      <div class="add-row">
+        <input class="add-input" id="newTaskInput" placeholder="Describe a task to add…"
+               onkeydown="if(event.key==='Enter')addClientTask()"/>
+        <button class="add-btn" onclick="addClientTask()">+ Add</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="client-footer">
+    Client Portal &nbsp;|&nbsp; All tasks are synced with admin &nbsp;|&nbsp; © Shashikant
+  </footer>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CLIENT CREDENTIALS  (change passwords here)
+   IMPORTANT: These are stored in the source code.
+   For real security, use a proper backend.
+═══════════════════════════════════════════════ */
+const CLIENT_CREDENTIALS = [
+  { id:'digital_juggler', name:'Digital Juggler', user:'digitaljuggler', pass:'juggler@2024', initials:'DJ' },
+  { id:'kalraj_thakur',   name:'Kalraj Thakur',   user:'kalraj',         pass:'kalraj@2024',  initials:'KT' },
+  { id:'shikhar',         name:'Shikhar',          user:'shikhar',        pass:'shikhar@2024', initials:'SK' },
+  { id:'flowgreen',       name:'Flowgreen',         user:'flowgreen',      pass:'flow@2024',    initials:'FG' },
+  { id:'growgreen',       name:'Growgreen',         user:'growgreen',      pass:'grow@2024',    initials:'GG' },
+  { id:'sam_renissa',     name:'Sam Renissa',       user:'samrenissa',     pass:'sam@2024',     initials:'SR' },
+  { id:'varchas',         name:'Varchas',           user:'varchas',        pass:'varchas@2024', initials:'VC' }
+];
+
+const STORE_KEY     = 'shashi_v3';       // Same key as admin page — shared localStorage
+const SESSION_KEY   = 'client_session';  // Which client is logged in
+
+/* ─── STATE ──────────────────────────────────── */
+let currentClient = null;
+let appState      = { clients:[], checked:{}, timerResults:{}, backlogNotes:{} };
+
+/* ─── INIT ───────────────────────────────────── */
+window.onload = () => {
+  // Check existing session
+  const saved = sessionStorage.getItem(SESSION_KEY);
+  if (saved) {
+    const cred = CLIENT_CREDENTIALS.find(c => c.id === saved);
+    if (cred) { loginSuccess(cred); return; }
+  }
+  // Focus username input
+  document.getElementById('loginUser').focus();
+};
+
+/* ─── LOGIN ──────────────────────────────────── */
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim().toLowerCase();
+  const pass = document.getElementById('loginPass').value.trim();
+  const cred = CLIENT_CREDENTIALS.find(c =>
+    c.user.toLowerCase() === user && c.pass === pass
+  );
+  if (cred) {
+    loginSuccess(cred);
+  } else {
+    const err = document.getElementById('loginError');
+    err.classList.add('show');
+    document.getElementById('loginPass').value = '';
+    setTimeout(() => err.classList.remove('show'), 4000);
+  }
+}
+
+function loginSuccess(cred) {
+  currentClient = cred;
+  sessionStorage.setItem(SESSION_KEY, cred.id);
+
+  // Hide login, show app
+  document.getElementById('loginScreen').style.display  = 'none';
+  const app = document.getElementById('app');
+  app.classList.add('visible');
+
+  // Set header
+  document.getElementById('clientAvatar').textContent   = cred.initials;
+  document.getElementById('clientNameDisplay').textContent = `Hello, ${cred.name} 👋`;
+  document.getElementById('clientSubtitle').textContent = 'Here are your tasks for today';
+
+  loadState();
+  renderTasks();
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+/* ─── LOAD STATE (shared with admin) ─────────── */
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORE_KEY);
+    if (s) appState = JSON.parse(s);
+  } catch(e) {}
+
+  // Ensure this client's task array exists
+  const clientExists = appState.clients?.find(c => c.id === currentClient.id);
+  if (!clientExists) {
+    if (!appState.clients) appState.clients = [];
+    // Try to match from DEFAULT in admin page via localStorage, or create fresh
+    appState.clients.push({ id:currentClient.id, name:currentClient.name, tasks:[] });
+  }
+  if (!Array.isArray(appState.checked[currentClient.id])) {
+    appState.checked = appState.checked || {};
+    appState.checked[currentClient.id] = [];
+  }
+  // Sync checked array length
+  const c = appState.clients.find(c => c.id === currentClient.id);
+  while (appState.checked[currentClient.id].length < c.tasks.length)
+    appState.checked[currentClient.id].push(false);
+  appState.checked[currentClient.id].length = c.tasks.length;
+}
+
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(appState));
+}
+
+/* ─── RENDER TASKS ───────────────────────────── */
+function renderTasks() {
+  const client  = appState.clients.find(c => c.id === currentClient.id);
+  const checked = appState.checked[currentClient.id] || [];
+  const tasks   = client?.tasks || [];
+  const done    = checked.filter(Boolean).length;
+  const total   = tasks.length;
+  const pct     = total > 0 ? (done / total) * 100 : 0;
+  const allDone = total > 0 && done === total;
+
+  // Progress header
+  document.getElementById('phPill').textContent    = `${done} / ${total}`;
+  document.getElementById('phPill').className      = `ph-pill ${allDone ? 'done' : ''}`;
+  document.getElementById('phBar').style.width     = `${pct}%`;
+  document.getElementById('progressHeader').className = `progress-header ${allDone ? 'done-prog' : ''}`;
+  document.getElementById('doneBanner').className  = `done-banner ${allDone ? 'show' : ''}`;
+
+  // Tasks
+  const list = document.getElementById('tasksList');
+  if (tasks.length === 0) {
+    list.innerHTML = `
+      <div style="text-align:center;padding:2.5rem 1rem;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:.6rem;">📭</div>
+        <div style="font-size:.9rem;">No tasks assigned yet.<br>Add one below or wait for Shashikant to assign tasks.</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = tasks.map((t, i) => `
+    <div class="task-item ${checked[i] ? 'done' : ''}" onclick="toggleClientTask(${i})">
+      <div class="task-checkbox">${checked[i] ? '✓' : ''}</div>
+      <span class="task-label">${escHtml(t)}</span>
+      <span class="task-tag">${checked[i] ? '✅ Done' : '⏳ Pending'}</span>
+    </div>
+  `).join('');
+}
+
+function toggleClientTask(idx) {
+  loadState(); // Always reload to get latest admin changes
+  const cid = currentClient.id;
+  if (!Array.isArray(appState.checked[cid])) appState.checked[cid] = [];
+  const client = appState.clients.find(c => c.id === cid);
+  while (appState.checked[cid].length < client.tasks.length)
+    appState.checked[cid].push(false);
+  appState.checked[cid][idx] = !appState.checked[cid][idx];
+  saveState();
+  renderTasks();
+  const isDone = appState.checked[cid][idx];
+  showToast(isDone ? '✅ Task marked complete!' : '↩️ Task marked pending', 'success');
+}
+
+function addClientTask() {
+  const inp = document.getElementById('newTaskInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  loadState();
+  const client = appState.clients.find(c => c.id === currentClient.id);
+  if (!client) return;
+  client.tasks.push(val);
+  appState.checked[currentClient.id].push(false);
+  saveState();
+  inp.value = '';
+  renderTasks();
+  showToast('✅ Task added successfully!', 'success');
+}
+
+/* ─── HELPERS ────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastTimer;
+function showToast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
