@@ -615,7 +615,10 @@
                         <div class="rt-item ${t.status === 'completed' ? 'done-task' : ''}">
                             <div class="rt-status"></div>
                             <div>
-                                <div class="rt-client">${c.business_name}</div>
+                                <div class="rt-client">
+                                    ${c.business_name}
+                                    ${onlineClients[c.id] ? `<span style="display:inline-block; width:8px; height:8px; background:var(--green); border-radius:50%; margin-left:6px; box-shadow:0 0 6px var(--green); animation: pulse-glow-grn 2s infinite" title="Client is online"></span>` : ''}
+                                </div>
                                 <div class="rt-task">${t.title}</div>
                             </div>
                         </div>
@@ -624,6 +627,38 @@
             });
             list.innerHTML = allTasksHtml;
         }
+
+        window.openHistory = async () => {
+            document.getElementById('historyModal').style.display = 'flex';
+            const { data, error } = await supabase.from('work_sessions')
+                .select('*, clients(business_name)')
+                .eq('is_active', false)
+                .order('end_time', { ascending: false })
+                .limit(50);
+            
+            const body = document.getElementById('historyBody');
+            if (error || !data || data.length === 0) {
+                body.innerHTML = '<div style="color:var(--muted)">No work history found.</div>';
+                return;
+            }
+            body.innerHTML = data.map(s => {
+                const start = new Date(s.start_time);
+                return `
+                <div class="task-card" style="cursor:default">
+                    <div style="flex:1">
+                        <div style="font-weight:800; font-size:1.1rem">${s.clients ? s.clients.business_name : 'Client'}</div>
+                        <div style="color:var(--muted); font-size:0.8rem">${start.toLocaleDateString()} at ${start.toLocaleTimeString([], {timeStyle: 'short'})}</div>
+                    </div>
+                    <div style="font-weight:900; color:var(--green); font-size:1.2rem;">
+                        ${Math.round(s.duration_minutes)}m
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.closeHistory = () => {
+            document.getElementById('historyModal').style.display = 'none';
+        };
 
         // --- UI RENDERING (Matching Original Theme) ---
         function renderSlides() {
