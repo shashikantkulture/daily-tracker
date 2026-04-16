@@ -419,6 +419,41 @@
         @media (max-width: 600px) {
             .side-nav-btn { display: none; }
         }
+        /* ─── FLOATING TASK ASSIGNER ─── */
+        .ft-assigner {
+            position: fixed; left: 20px; top: 120px; z-index: 100;
+            width: 280px; background: rgba(15, 15, 15, 0.95);
+            border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 15px rgba(220,38,38,0.1);
+            backdrop-filter: blur(15px); display: flex; flex-direction: column;
+            overflow: hidden; transition: box-shadow 0.3s;
+        }
+        .ft-assigner:hover { box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 25px rgba(220,38,38,0.2); }
+        .ft-header {
+            background: linear-gradient(90deg, rgba(30,0,0,0.8), rgba(10,0,0,0.8)); 
+            padding: 12px 15px; font-size: 0.85rem; font-weight: 800; color: var(--muted);
+            border-bottom: 1px solid var(--border); cursor: grab;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .ft-header:active { cursor: grabbing; }
+        .ft-body {
+            padding: 15px; display: flex; flex-direction: column; gap: 12px;
+        }
+        .ft-select, .ft-input {
+            background: rgba(0,0,0,0.7); border: 1px solid var(--border);
+            color: white; padding: 10px; border-radius: 8px; font-size: 0.85rem; outline: none;
+            font-family: inherit; transition: border-color 0.2s;
+        }
+        .ft-select:focus, .ft-input:focus { border-color: var(--red); }
+        .ft-select option { background: #1a1a1a; }
+        .ft-btn {
+            background: var(--red); color: white; border: none; padding: 10px;
+            border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .ft-btn:hover { background: #b91c1c; transform: translateY(-1px); box-shadow: 0 5px 15px var(--red-glow); }
+        @media (max-width: 800px) {
+            .ft-assigner { display: none; }
+        }
     </style>
 </head>
 
@@ -493,6 +528,20 @@
     </div>
 
     <div class="side-toggle-floater" onclick="toggleSidebar()">ROUTINE LAYER</div>
+
+    <div class="ft-assigner" id="ftaWidget">
+        <div class="ft-header" id="ftaHeader" title="Right-Click & Hold to Drag">
+            <span style="color:white; letter-spacing:1px">ASSIGN TASK</span>
+            <span style="color:var(--red-soft)">✛</span>
+        </div>
+        <div class="ft-body">
+            <select class="ft-select" id="ftaClientSelect">
+                <option value="">Select a Client...</option>
+            </select>
+            <input type="text" class="ft-input" id="ftaTaskInput" placeholder="New task objective..." autocomplete="off"/>
+            <button class="ft-btn" id="ftaSubmitBtn">Dispatch Task</button>
+        </div>
+    </div>
 
     <div id="historyModal" style="position:fixed; inset:0; background:rgba(10,10,10,0.95); z-index:3000; display:none; flex-direction:column; padding:2rem; overflow-y:auto; backdrop-filter:blur(20px)">
         <div style="display:flex; justify-content:space-between; margin-bottom:2rem; align-items:center">
@@ -620,6 +669,14 @@
                 document.body.classList.add('heartbeat-mode');
             } else {
                 document.body.classList.remove('heartbeat-mode');
+            }
+            
+            // Populate Assigner
+            const select = document.getElementById('ftaClientSelect');
+            if (select) {
+                const prev = select.value;
+                select.innerHTML = '<option value="">Select a Client...</option>' + state.clients.map(c => `<option value="${c.id}">${c.business_name}</option>`).join('');
+                if (prev) select.value = prev;
             }
             
             renderSlides();
@@ -930,6 +987,53 @@
 
         // Initial Run
         init();
+
+        // ─── TASK ASSIGNER WIDGET LOGIC ───
+        const widget = document.getElementById('ftaWidget');
+        const header = document.getElementById('ftaHeader');
+        let isDragging = false;
+        let dragStartX, dragStartY, initialLeft, initialTop;
+        
+        if (header && widget) {
+            header.addEventListener('contextmenu', e => e.preventDefault());
+
+            header.addEventListener('mousedown', e => {
+                if (e.button !== 2) return; // Right-click only
+                isDragging = true;
+                dragStartX = e.clientX; dragStartY = e.clientY;
+                const rect = widget.getBoundingClientRect();
+                initialLeft = rect.left; initialTop = rect.top;
+                header.style.cursor = 'grabbing';
+            });
+            window.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                widget.style.left = initialLeft + (e.clientX - dragStartX) + 'px';
+                widget.style.top = initialTop + (e.clientY - dragStartY) + 'px';
+            });
+            window.addEventListener('mouseup', e => {
+                if (e.button !== 2) return;
+                isDragging = false;
+                header.style.cursor = 'grab';
+            });
+        }
+
+        const ftaBtn = document.getElementById('ftaSubmitBtn');
+        if (ftaBtn) {
+            ftaBtn.addEventListener('click', async () => {
+                const clientId = document.getElementById('ftaClientSelect').value;
+                const title = document.getElementById('ftaTaskInput').value.trim();
+                if (!clientId || !title) return;
+                
+                ftaBtn.disabled = true; ftaBtn.textContent = '...';
+                await supabase.from('tasks').insert([{ client_id: clientId, title }]);
+                document.getElementById('ftaTaskInput').value = '';
+                ftaBtn.disabled = false; ftaBtn.textContent = 'Dispatch Task';
+                refreshData();
+            });
+            document.getElementById('ftaTaskInput').addEventListener('keydown', e => {
+                if (e.key === 'Enter') ftaBtn.click();
+            });
+        }
     </script>
 </body>
 </html>
