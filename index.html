@@ -1154,13 +1154,46 @@
                     <div style="border-top: 1px solid var(--border); padding-top:1rem">
                         <div style="font-size:0.75rem; color:var(--muted); margin-bottom:8px">SECURITY MANAGEMENT</div>
                         <div style="display:flex; gap:0.5rem">
-                            <input type="text" readonly value="${c.profiles?.email || 'No Linked Account'}" class="mgmt-small-input" style="opacity:0.6" />
-                            ${c.user_id ? `<button class="mgmt-action-btn" onclick="resetClientPass('${c.user_id}', '${c.business_name}')">Reset Pass</button>` : ''}
+                            ${c.user_id ? `
+                                <input type="text" readonly value="${c.profiles?.email || 'Logged In'}" class="mgmt-small-input" style="opacity:0.6" />
+                                <button class="mgmt-action-btn" onclick="resetClientPass('${c.user_id}', '${c.business_name}')">Reset Pass</button>
+                            ` : `
+                                <input type="email" id="link-email-${c.id}" class="mgmt-small-input" placeholder="Enter Email to Link..." />
+                                <button class="mgmt-action-btn" style="background:var(--red); color:white" onclick="linkExistingClient('${c.id}', '${c.business_name}')">Link Account</button>
+                            `}
                         </div>
                     </div>
                 </div>
             `).join('');
         }
+
+        window.linkExistingClient = async (clientId, bizName) => {
+            if (!adminClient) return alert("Please unlock Admin Actions first!");
+            const email = document.getElementById(`link-email-${clientId}`).value.trim();
+            if (!email) return alert("Please enter an email address.");
+
+            const tempPass = Math.random().toString(36).slice(-10);
+
+            // 1. Create User
+            const { data: userData, error: uError } = await adminClient.auth.admin.createUser({
+                email: email,
+                password: tempPass,
+                email_confirm: true
+            });
+
+            if (uError) return alert(uError.message);
+
+            // 2. Update existing Client Record
+            const { error: cError } = await adminClient.from('clients').update({ user_id: userData.user.id }).eq('id', clientId);
+
+            if (cError) {
+                alert("Auth user created but linking failed: " + cError.message);
+            } else {
+                alert(`SUCCESS! ACCOUNT LINKED.\n\nBUSINESS: ${bizName}\nEMAIL: ${email}\nPASSWORD: ${tempPass}\n\nShare these details with your client!`);
+                renderMgmtList();
+                refreshData();
+            }
+        };
 
         window.updateBizName = async (id) => {
             const newName = document.getElementById(`bn-${id}`).value.trim();
