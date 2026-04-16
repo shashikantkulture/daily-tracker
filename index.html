@@ -295,24 +295,25 @@
 
         @media (min-width: 601px) {
             .pc-bottom-timeline {
-                display: flex; width: 100%; height: 4px;
-                background: rgba(255, 255, 255, 0.05); position: relative;
-                opacity: 0.7; transition: opacity 0.3s, height 0.3s;
+                display: flex; width: 100%; height: 22px;
+                background: rgba(255, 255, 255, 0.02); position: relative;
+                opacity: 0.6; transition: opacity 0.3s, height 0.3s;
                 border-top: 1px solid var(--border);
             }
             .pc-bottom-timeline:hover {
                 opacity: 1; height: 35px; background: rgba(10, 10, 10, 0.9);
             }
             .pt-segment {
-                flex: 1; border-right: 1px solid rgba(0,0,0,0.5); position: relative;
+                flex: 1; border-right: 1px solid rgba(255,255,255,0.05); position: relative;
                 display: flex; align-items: center; justify-content: center;
-                color: transparent; font-size: 0.75rem; font-weight: 700;
+                color: var(--muted); font-size: 0.6rem; font-weight: 600;
                 transition: all 0.3s; cursor: default; white-space: nowrap; overflow: hidden;
             }
-            .pt-segment.active-segment { background: var(--red); box-shadow: 0 0 10px var(--red-glow); }
-            .pc-bottom-timeline:hover .pt-segment { color: var(--muted); }
+            .pt-segment.active-segment { background: rgba(220, 38, 38, 0.15); color: var(--red-soft); box-shadow: inset 0 -2px 0 var(--red); }
+            .pc-bottom-timeline:hover .pt-segment { color: var(--muted); font-size: 0.75rem; }
             .pc-bottom-timeline:hover .pt-segment.active-segment {
-                color: white; transform: scale(1.05); z-index: 10;
+                background: var(--red); color: white; transform: scale(1.05); z-index: 10;
+                box-shadow: 0 0 10px var(--red-glow);
             }
 
             .pc-right-timeline {
