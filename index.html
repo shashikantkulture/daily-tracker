@@ -1128,11 +1128,12 @@
                     auth: { autoRefreshToken: false, persistSession: false }
                 });
                 document.getElementById('mgmtContent').style.opacity = '1';
-                document.getElementById('mgmtContent').style.pointer_events = 'all';
+                document.getElementById('mgmtContent').style.pointerEvents = 'all';
                 document.getElementById('keyPrompt').style.display = 'none';
                 showToast("Admin access unlocked!");
             } catch (e) {
-                alert("Invalid key format.");
+                console.error("Unlock Error:", e);
+                alert("Unlock Failed: " + (e.message || "Invalid key format"));
             }
         };
 
