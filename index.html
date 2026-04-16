@@ -89,6 +89,17 @@
         .top-bar h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
         .top-bar p { font-size: 0.85rem; color: var(--muted); }
         .top-bar-right { display: flex; align-items: center; gap: 0.8rem; }
+        .top-bar-center {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center;
+        }
+        .mgmt-entry-btn {
+            background: rgba(220, 38, 38, 0.1); border: 1px solid var(--border-red);
+            color: var(--red-soft); padding: 0.5rem 1rem; font-size: 0.75rem; font-weight: 800;
+            border-radius: 99px; letter-spacing: 0.05em; transition: 0.3s;
+        }
+        .mgmt-entry-btn:hover { background: var(--red); color: white; box-shadow: 0 0 15px var(--red-glow); }
+
 
         .slide-counter { font-size: 0.85rem; font-weight: 600; color: var(--muted); padding-right: 0.5rem; }
         
@@ -454,6 +465,35 @@
         @media (max-width: 800px) {
             .ft-assigner { display: none; }
         }
+
+        /* ─── MGMT MODAL STYLES ─── */
+        .mgmt-modal {
+            position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 4000;
+            display: none; flex-direction: column; padding: 2rem; overflow-y: auto; backdrop-filter: blur(30px);
+        }
+        .mgmt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .mgmt-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 1.5rem;
+            display: flex; flex-direction: column; gap: 1rem; transition: 0.3s;
+        }
+        .mgmt-card:hover { border-color: var(--border-red); transform: translateY(-3px); }
+        .mgmt-input-row { display: flex; gap: 0.5rem; }
+        .mgmt-small-input {
+            background: var(--card2); border: 1px solid var(--border); color: white;
+            padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; flex: 1; outline: none;
+        }
+        .mgmt-small-input:focus { border-color: var(--red); }
+        .mgmt-action-btn {
+            background: var(--card2); color: var(--muted); border: 1px solid var(--border);
+            padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+        }
+        .mgmt-action-btn:hover { background: var(--muted2); color: white; }
+        .mgmt-action-btn.danger:hover { background: var(--red); border-color: var(--red); }
+
+        .service-key-bar {
+            background: #1a1a1a; padding: 1.5rem; border-radius: 16px; border: 1px solid #333;
+            margin-bottom: 2rem; display: flex; flex-direction: column; gap: 10px;
+        }
     </style>
 </head>
 
@@ -483,6 +523,9 @@
             <div class="top-bar-left">
                 <h1>Execution Dashboard</h1>
                 <p>Track your daily grind</p>
+            </div>
+            <div class="top-bar-center">
+                <button class="mgmt-entry-btn" onclick="openMgmt()">⚙ CLIENT CONTROL CENTER</button>
             </div>
             <div class="top-bar-right">
                 <div class="slide-counter"><span id="currSlide">1</span>/<span id="totalSlide">7</span></div>
@@ -552,6 +595,35 @@
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <!-- CLIENT MANAGEMENT MODAL -->
+    <div id="mgmtModal" class="mgmt-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem">
+            <h2 style="font-size:2rem; font-weight:900; letter-spacing:-0.05em">🛡️ Client Control Center</h2>
+            <button class="sync-btn" onclick="closeMgmt()">Close Control Center</button>
+        </div>
+
+        <div class="service-key-bar" id="keyPrompt">
+            <div style="font-weight:700; font-size:0.9rem; color:var(--red-soft)">⚠️ ADMIN PERMISSIONS REQUIRED</div>
+            <p style="font-size:0.8rem; color:var(--muted)">To manage passwords and users, paste your Supabase <b>Service Role Key</b> below. This key is never saved and is only kept in memory for this session.</p>
+            <div class="mgmt-input-row">
+                <input type="password" id="serviceKeyInput" class="mgmt-small-input" style="letter-spacing:4px" placeholder="Paste service_role key here..." />
+                <button class="sync-btn" onclick="unlockAdminAuth()">Unlock Admin Actions</button>
+            </div>
+        </div>
+
+        <div id="mgmtContent" style="opacity:0.3; pointer-events:none">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end">
+                <h3 style="font-weight:800; color:white">Active Client Accounts</h3>
+                <div class="mgmt-card" style="padding:1rem; flex-direction:row; gap:1rem; align-items:center; margin:0">
+                    <input type="text" id="newBizName" class="mgmt-small-input" placeholder="New Business Name..." />
+                    <input type="email" id="newBizEmail" class="mgmt-small-input" placeholder="Client Email..." />
+                    <button class="sync-btn" onclick="createNewClient()">+ Add Brand Account</button>
+                </div>
+            </div>
+            <div class="mgmt-grid" id="mgmtGrid"></div>
+        </div>
+    </div>
 
     <!-- SUPABASE LIBRARY -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1034,6 +1106,116 @@
                 if (e.key === 'Enter') ftaBtn.click();
             });
         }
+
+        // ─── CLIENT MANAGEMENT LOGIC ───
+        let adminClient = null;
+
+        window.openMgmt = () => {
+            document.getElementById('mgmtModal').style.display = 'flex';
+            renderMgmtList();
+        };
+        window.closeMgmt = () => {
+            document.getElementById('mgmtModal').style.display = 'none';
+        };
+
+        window.unlockAdminAuth = () => {
+            const key = document.getElementById('serviceKeyInput').value.trim();
+            if (!key) return;
+            try {
+                // We use the same URL from the main client but the new service key
+                const SUPABASE_URL = 'https://fusaxujptvfukvqirtbv.supabase.co';
+                adminClient = window.supabase.createClient(SUPABASE_URL, key, {
+                    auth: { autoRefreshToken: false, persistSession: false }
+                });
+                document.getElementById('mgmtContent').style.opacity = '1';
+                document.getElementById('mgmtContent').style.pointer_events = 'all';
+                document.getElementById('keyPrompt').style.display = 'none';
+                showToast("Admin access unlocked!");
+            } catch (e) {
+                alert("Invalid key format.");
+            }
+        };
+
+        async function renderMgmtList() {
+            const { data: clients, error } = await supabase.from('clients').select('*, profiles(email)');
+            const grid = document.getElementById('mgmtGrid');
+            if (error || !clients) return;
+
+            grid.innerHTML = clients.map(c => `
+                <div class="mgmt-card">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                        <div>
+                            <div style="font-size:0.7rem; color:var(--muted); font-weight:800; margin-bottom:4px">CLIENT ID: ${c.id.substring(0,8)}...</div>
+                            <input type="text" value="${c.business_name}" class="mgmt-small-input" id="bn-${c.id}" style="font-size:1.1rem; font-weight:800; margin-bottom:10px" />
+                        </div>
+                        <button class="mgmt-action-btn" onclick="updateBizName('${c.id}')">Update Name</button>
+                    </div>
+                    <div style="border-top: 1px solid var(--border); padding-top:1rem">
+                        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:8px">SECURITY MANAGEMENT</div>
+                        <div style="display:flex; gap:0.5rem">
+                            <input type="text" readonly value="${c.profiles?.email || 'No Linked Account'}" class="mgmt-small-input" style="opacity:0.6" />
+                            ${c.user_id ? `<button class="mgmt-action-btn" onclick="resetClientPass('${c.user_id}', '${c.business_name}')">Reset Pass</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateBizName = async (id) => {
+            const newName = document.getElementById(`bn-${id}`).value.trim();
+            if (!newName) return;
+            const { error } = await supabase.from('clients').update({ business_name: newName }).eq('id', id);
+            if (error) alert(error.message);
+            else {
+                showToast("Business name updated!");
+                refreshData();
+            }
+        };
+
+        window.resetClientPass = async (userId, bizName) => {
+            if (!adminClient) return alert("Please unlock Admin Actions first!");
+            const newPass = Math.random().toString(36).slice(-10); // Random alphanumeric
+            const { error } = await adminClient.auth.admin.updateUserById(userId, { password: newPass });
+            if (error) alert(error.message);
+            else {
+                const info = `NEW PASSWORD FOR ${bizName.toUpperCase()}:\n\n${newPass}\n\nCopy this now!`;
+                alert(info);
+                showToast("Password reset successful!");
+            }
+        };
+
+        window.createNewClient = async () => {
+            if (!adminClient) return alert("Please unlock Admin Actions first!");
+            const bizName = document.getElementById('newBizName').value.trim();
+            const email = document.getElementById('newBizEmail').value.trim();
+            if (!bizName || !email) return;
+
+            const tempPass = Math.random().toString(36).slice(-10);
+
+            // 1. Create User
+            const { data: userData, error: uError } = await adminClient.auth.admin.createUser({
+                email: email,
+                password: tempPass,
+                email_confirm: true
+            });
+
+            if (uError) return alert(uError.message);
+
+            // 2. Link Client Record (Trigger handles profile automatically)
+            const { error: cError } = await adminClient.from('clients').insert([
+                { business_name: bizName, user_id: userData.user.id }
+            ]);
+
+            if (cError) {
+                alert("Auth user created but linking failed: " + cError.message);
+            } else {
+                alert(`SUCCESS! ACCOUNT CREATED.\n\nBUSINESS: ${bizName}\nEMAIL: ${email}\nPASSWORD: ${tempPass}\n\nShare these details with your client!`);
+                document.getElementById('newBizName').value = '';
+                document.getElementById('newBizEmail').value = '';
+                renderMgmtList();
+                refreshData();
+            }
+        };
     </script>
 </body>
 </html>
