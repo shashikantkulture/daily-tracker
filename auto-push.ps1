@@ -50,7 +50,7 @@ $action = {
 
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  SUCCESS! Site updated on GitHub" -ForegroundColor Green
-            Write-Host "  Netlify will auto-deploy in ~30 seconds" -ForegroundColor Green
+            Write-Host "  Vercel will auto-deploy in ~30 seconds" -ForegroundColor Green
         } else {
             Write-Host "  Push failed: $pushResult" -ForegroundColor Red
         }
