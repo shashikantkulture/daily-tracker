@@ -268,7 +268,6 @@
         /* ─── QUOTE BAR ──────────────────────────── */
         .quote-bar { padding: 0.6rem 2rem; background: var(--card2); font-size: 0.75rem; color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); }
 
-        /* ─── MOBILE ─────────────────────────────── */
         @media (max-width: 600px) {
             .top-bar { padding: 1rem; }
             .top-bar-left h1 { font-size: 1.1rem; }
@@ -288,6 +287,59 @@
             .dot { width: 6px; height: 6px; }
             .dot.active { width: 18px; }
             .side-toggle-floater { height: 70px; width: 26px; font-size: 0.6rem; border-radius: 10px 0 0 10px; }
+        }
+
+        /* ─── PC TIMELINES ────────────────────────── */
+        .pc-bottom-timeline { display: none; }
+        .pc-right-timeline { display: none; }
+
+        @media (min-width: 601px) {
+            .pc-bottom-timeline {
+                display: flex; width: 100%; height: 4px;
+                background: rgba(255, 255, 255, 0.05); position: relative;
+                opacity: 0.7; transition: opacity 0.3s, height 0.3s;
+                border-top: 1px solid var(--border);
+            }
+            .pc-bottom-timeline:hover {
+                opacity: 1; height: 35px; background: rgba(10, 10, 10, 0.9);
+            }
+            .pt-segment {
+                flex: 1; border-right: 1px solid rgba(0,0,0,0.5); position: relative;
+                display: flex; align-items: center; justify-content: center;
+                color: transparent; font-size: 0.75rem; font-weight: 700;
+                transition: all 0.3s; cursor: default; white-space: nowrap; overflow: hidden;
+            }
+            .pt-segment.active-segment { background: var(--red); box-shadow: 0 0 10px var(--red-glow); }
+            .pc-bottom-timeline:hover .pt-segment { color: var(--muted); }
+            .pc-bottom-timeline:hover .pt-segment.active-segment {
+                color: white; transform: scale(1.05); z-index: 10;
+            }
+
+            .pc-right-timeline {
+                display: flex; flex-direction: column;
+                position: fixed; top: 120px; right: 20px; width: 320px;
+                bottom: 80px; z-index: 50; opacity: 0.7;
+                overflow-y: auto; gap: 0.6rem; transition: opacity 0.3s;
+                padding-right: 10px;
+            }
+            .pc-right-timeline:hover { opacity: 1; }
+            .pc-right-timeline::-webkit-scrollbar { width: 4px; }
+            .pc-right-timeline::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+            
+            .rt-item {
+                display: flex; align-items: center; gap: 1rem;
+                padding: 1rem 1.2rem; border-radius: 12px;
+                background: var(--card2); border: 1px solid var(--border-red);
+                transition: 0.3s; animation: slideFadeIn 0.5s ease both;
+            }
+            .rt-item .rt-status {
+                width: 12px; height: 12px; border-radius: 50%; background: var(--red);
+                box-shadow: 0 0 8px var(--red-glow); flex-shrink: 0;
+            }
+            .rt-item.done-task { border-color: var(--border-grn); }
+            .rt-item.done-task .rt-status { background: var(--green); box-shadow: 0 0 8px var(--border-grn); }
+            .rt-client { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
+            .rt-task { font-size: 0.9rem; font-weight: 600; color: white; line-height: 1.3; }
         }
 
         /* ─── ANIMATIONS ─────────────────────────── */
@@ -344,6 +396,12 @@
             color: #fff;
             transform: scale(1.02);
         }
+
+        @keyframes pulse-glow-grn {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
     </style>
 </head>
 
@@ -376,7 +434,7 @@
             </div>
             <div class="top-bar-right">
                 <div class="slide-counter"><span id="currSlide">1</span>/<span id="totalSlide">7</span></div>
-                <button class="sync-btn" onclick="exportAndSync()">🔄 Update</button>
+                <button class="sync-btn" onclick="refreshData()">🔄 Refresh</button>
                 <button class="cal-btn" onclick="openHistory()" title="History">📅</button>
                 <button class="yt-btn" id="ytMusicBtn" onclick="playRandomMusic()" title="YouTube Music">▶</button>
             </div>
@@ -387,6 +445,10 @@
         <div class="slider-viewport">
             <div class="slides-track" id="slidesTrack"></div>
         </div>
+
+        <div class="pc-right-timeline" id="pcRightTimeline"></div>
+
+        <div class="pc-bottom-timeline" id="pcBottomTimeline"></div>
 
         <nav class="bottom-nav">
             <button class="nav-btn" id="prevBtn" onclick="goSlide(-1)">← Prev</button>
@@ -437,6 +499,7 @@
         // Global state
         let state = { clients: [], checked: {}, sessions: {}, feedback: [] };
         let currentSlide = 0;
+        let onlineClients = {};
         
         async function init() {
             const authData = await checkSession('admin');
@@ -455,10 +518,41 @@
             // Subscriptions
             subscribeToAllData(() => refreshData());
 
+            // Client Presence Tracker
+            const presenceChannel = supabase.channel('online-users');
+            presenceChannel.on('presence', { event: 'sync' }, () => {
+                const presenceState = presenceChannel.presenceState();
+                onlineClients = {};
+                for (const id in presenceState) {
+                    presenceState[id].forEach(user => {
+                        onlineClients[user.client_id] = true;
+                    });
+                }
+                renderSlides();
+            }).subscribe();
+
             renderRoutine();
             updateRoutine();
             setInterval(updateRoutine, 10000);
             window.addEventListener('resize', () => goToSlide(currentSlide, false));
+            
+            // Add swipe detection
+            let touchStartX = 0;
+            let touchStartY = 0;
+            const track = document.getElementById('slidesTrack');
+            track.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, {passive: true});
+            track.addEventListener('touchend', e => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const touchEndY = e.changedTouches[0].screenY;
+                if (Math.abs(touchEndX - touchStartX) > Math.abs(touchEndY - touchStartY) && Math.abs(touchEndX - touchStartX) > 40) {
+                    if (touchEndX < touchStartX) window.goSlide(1);
+                    if (touchEndX > touchStartX) window.goSlide(-1);
+                }
+            }, {passive: true});
+
             
             // Start Quote Rotation
             rotateAdminQuotes();
@@ -504,6 +598,30 @@
             
             renderSlides();
             renderDots();
+            renderRightTimeline();
+        }
+
+        window.refreshData = refreshData;
+
+        function renderRightTimeline() {
+            const list = document.getElementById('pcRightTimeline');
+            if (!list) return;
+            let allTasksHtml = '';
+            state.clients.forEach(c => {
+                const tasks = c.tasks || [];
+                tasks.forEach(t => {
+                    allTasksHtml += `
+                        <div class="rt-item ${t.status === 'completed' ? 'done-task' : ''}">
+                            <div class="rt-status"></div>
+                            <div>
+                                <div class="rt-client">${c.business_name}</div>
+                                <div class="rt-task">${t.title}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+            list.innerHTML = allTasksHtml;
         }
 
         // --- UI RENDERING (Matching Original Theme) ---
@@ -547,7 +665,10 @@
                 <div class="client-column">
                     <div class="client-header-card ${isAll?'done-card':''}">
                         <div style="display:flex; justify-content:space-between; align-items:center">
-                            <span class="client-name-editable">${c.business_name}</span>
+                            <span class="client-name-editable">
+                                ${c.business_name}
+                                ${onlineClients[c.id] ? `<span style="display:inline-block; width:10px; height:10px; background:var(--green); border-radius:50%; margin-left:8px; box-shadow:0 0 8px var(--green); animation: pulse-glow-grn 2s infinite" title="Online now"></span>` : ''}
+                            </span>
                             <span class="progress-pill ${isAll?'done':''}">${done}/${total}</span>
                         </div>
                         <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:${pct}%"></div></div>
@@ -726,6 +847,13 @@
             });
 
             activeRoutineIdx = foundIdx;
+
+            let pcBlocks = '';
+            ROUTINE.forEach((r, i) => {
+                pcBlocks += `<div class="pt-segment ${i === foundIdx ? 'active-segment' : ''}">${r.l}</div>`;
+            });
+            const ptEl = document.getElementById('pcBottomTimeline');
+            if (ptEl) ptEl.innerHTML = pcBlocks;
 
             const startDay = 9 * 60;
             const endDay = 25 * 60; 

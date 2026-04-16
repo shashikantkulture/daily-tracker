@@ -56,6 +56,7 @@
       position: absolute; width: 60vw; height: 60vw;
       border-radius: 50%; filter: blur(100px); opacity: 0.12;
       animation: move-glow 25s infinite alternate ease-in-out;
+      will-change: transform;
     }
     .glow-1 { background: var(--blue); top: -10%; left: -5%; }
     .glow-2 { background: var(--accent); bottom: -12%; right: -5%; animation-delay: -12.5s; }
@@ -910,6 +911,12 @@
       text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
       transform: translateY(-2px);
     }
+    
+    @keyframes pulse-glow-grn {
+        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
   </style>
 </head>
 
@@ -1043,12 +1050,9 @@
   </div>
 
   <!-- WORKING POPUP (REAL-TIME) -->
-  <div id="workingOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; display:none; align-items:center; justify-content:center; backdrop-filter:blur(8px)">
-      <div class="add-section" style="text-align:center; padding:3rem; max-width:90%">
-          <div style="font-size:3rem; margin-bottom:1rem">🚀</div>
-          <h2 style="font-size:1.5rem; font-weight:900; margin-bottom:0.5rem">Working on your brand...</h2>
-          <p style="color:var(--muted); font-size:0.9rem">Shashikant just started a focused work session for you.</p>
-      </div>
+  <div id="workingOverlay" style="position:fixed; bottom:20px; right:20px; z-index:9999; background:rgba(22, 163, 74, 0.1); border:1px solid var(--border-grn); border-radius:12px; padding:1rem; backdrop-filter:blur(10px); box-shadow:0 0 20px rgba(22, 163, 74, 0.4); display:none; align-items:center; gap:0.8rem; animation: floatIn 0.5s ease both; pointer-events:none;">
+      <div style="width:12px; height:12px; background:var(--green); border-radius:50%; box-shadow:0 0 10px var(--green); animation: pulse-glow-grn 1.5s infinite"></div>
+      <div style="color:var(--green-soft); font-weight:800; font-size:0.9rem; text-shadow:0 0 8px rgba(34, 197, 94, 0.5);">Shashikant is online - relax</div>
   </div>
 
   <!-- SUPABASE LIBRARY -->
@@ -1063,6 +1067,8 @@
     import { subscribeToClientData } from './js/realtime.js';
 
     let currentClient = null;
+    let presenceChannel = null;
+    let wasWorking = false;
     let state = { tasks: [], stats: {}, package: null, sessions: [], feedback: [] };
 
     const CLIENT_QUOTES = [
@@ -1118,6 +1124,17 @@
             }
         }, 10000);
 
+        // Real-time Presence Heartbeat
+        presenceChannel = supabase.channel('online-users');
+        presenceChannel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await presenceChannel.track({
+                    client_id: currentClient.id,
+                    online_at: new Date().toISOString()
+                });
+            }
+        });
+
         // Real-time
         subscribeToClientData(currentClient.id, () => refreshData());
     }
@@ -1144,6 +1161,10 @@
         
         // Real-time sessions overlay
         const active = state.sessions.find(s => s.is_active);
+        if (active && !wasWorking) {
+            showToast('🚀 Shashikant just started working on your brand!', 'success');
+        }
+        wasWorking = !!active;
         document.getElementById('workingOverlay').style.display = active ? 'flex' : 'none';
     }
 
